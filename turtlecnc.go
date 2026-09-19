@@ -1,11 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
-	_ "strings"
 )
 
 // globals used by many of the jobs
@@ -61,13 +62,64 @@ func main() {
 	default_depth = 6.35
 	abs_state = true
 
-	testit()
-    //runServer()
+	//testit()
+    runServer()
+}
+
+func apiHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // var payload DialogPayload
+    // Decode JSON data straight from the request body
+    // err := json.NewDecoder(r.Body).Decode(&payload)
+    // if err != nil {
+    //     http.Error(w, err.Error(), http.StatusBadRequest)
+    //     return
+    // }
+//    fmt.Printf("Asynchronously received option: %s\n", r.Body)
+
+    buf, err := io.ReadAll(r.Body)
+    if err != nil {
+        fmt.Println(fmt.Errorf("readall error: %w", err))
+        return
+    }
+
+    // {"selection":{"jobname":"profile","width":100,"length":150,"depth":6,"tooldia":6.35,"doc":1.5,"side":"inside"}
+    m := make(map[string]any)
+    json.Unmarshal(buf, &m)
+
+    rm, ok := m["selection"].(map[string]any)
+    if !ok {
+        fmt.Println("reply does not have selection")
+        return
+    }
+
+    jobname := rm["jobname"]
+
+    switch jobname {
+    case "rectangle":
+        fmt.Println(fmt.Sprintf("We got a rectangle job, width %.4f", rm["width"]))
+    case "hole":
+        fmt.Println("We got a hole job")
+    case "circle":
+        fmt.Println("We got a circle job")
+    default:
+        fmt.Println("Unknown job: ", jobname)
+        return
+    }
+
+    // Send JSON response back
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }
 
 func runServer() {
     fileserver := http.FileServer(http.Dir("./static"))
 
+    http.HandleFunc("/api/dialog-result", apiHandler)
     http.Handle("/", fileserver)
 
     fmt.Printf("port running on http://localhost:8080/\n")

@@ -13,9 +13,9 @@
 <p>Pick a job type:</p>
 
 <div class="cd-buttons" style="justify-content:flex-start">
-  <button class="cd-btn" data-job="pocket">&lt; &nbsp;<span class="cd-hot">P</span>ocket&nbsp; &gt;</button>
-  <button class="cd-btn" data-job="drill">&lt; &nbsp;<span class="cd-hot">D</span>rill&nbsp; &gt;</button>
-  <button class="cd-btn" data-job="facing">&lt; &nbsp;<span class="cd-hot">F</span>acing&nbsp; &gt;</button>
+  <button class="cd-btn" data-job="rectangle">&lt; &nbsp;<span class="cd-hot">R</span>ectangle&nbsp; &gt;</button>
+  <button class="cd-btn" data-job="circle">&lt; &nbsp;<span class="cd-hot">C</span>ircle&nbsp; &gt;</button>
+  <button class="cd-btn" data-job="hole">&lt; &nbsp;<span class="cd-hot">H</span>ole&nbsp; &gt;</button>
 </div>
 
 <pre class="cd-output" id="out" aria-live="polite"></pre>
@@ -29,11 +29,11 @@
 const mm = { type: "number", step: 0.001, min: 0, unit: "mm" };
 
 const SPECS = {
-  pocket: {
-    title: "Pocket / Profile",
+  rectangle: {
+    title: "Rectangle profile",
     blurb: "Stock and cutter values, then which side of the line to run.",
     fields: [
-      { name: "jobname", label: "Job name", type: "text", value: "untitled", maxlength: 40 },
+      { name: "jobname", label: "Job name", type: "text", value: "rectangle", maxlength: 40 },
       { name: "width",   label: "Width",         ...mm, value: 100 },
       { name: "length",  label: "Length",        ...mm, value: 150 },
       { name: "depth",   label: "Depth",         ...mm, value: 6 },
@@ -43,33 +43,27 @@ const SPECS = {
       { name: "side", label: "Cutter offset", type: "radio", value: "inside",
         options: [
           { value: "inside",  label: "Inside \u2014 cut within the boundary" },
-          { value: "outside", label: "Outside \u2014 cut around the boundary" }
+          { value: "outside", label: "Outside \u2014 cut around the boundary" },
+          { value: "laser",   label: "Laser \u2014 cut on the boundary" }
         ]}
     ]
   },
 
-  drill: {
-    title: "Drill Cycle",
+  hole: {
+    title: "Drill Helical Hole",
     fields: [
-      { name: "jobname", label: "Job name", type: "text", value: "holes" },
+      { name: "jobname", label: "Job name", type: "text", value: "hole" },
       { name: "holedia", label: "Hole diameter", ...mm, value: 5, min: 0.001 },
       { name: "depth",   label: "Depth",         ...mm, value: 12 },
-      { name: "peck",    label: "Peck depth",    ...mm, value: 2, min: 0.001 },
-      { name: "retract", label: "Retract",       ...mm, value: 2 },
-      { name: "cycle", label: "Cycle", type: "select", value: "G83",
-        options: [
-          { value: "G81", label: "G81 \u2014 simple drill" },
-          { value: "G82", label: "G82 \u2014 drill with dwell" },
-          { value: "G83", label: "G83 \u2014 peck drill" }
-        ]},
-      { name: "coolant", label: "Flood coolant", type: "check", value: true }
+      { name: "peck",    label: "Peck depth",    ...mm, value: 0 },
+      { name: "laser",   label: "Laser", type: "check", value: false }
     ]
   },
 
-  facing: {
-    title: "Face Stock",
+  circle: {
+    title: "Circle profile",
     fields: [
-      { name: "jobname", label: "Job name",      type: "text", value: "facing" },
+      { name: "jobname", label: "Job name",      type: "text", value: "circle" },
       { name: "width",   label: "Width",         ...mm, value: 200 },
       { name: "length",  label: "Length",        ...mm, value: 300 },
       { name: "stock",   label: "Stock to remove", ...mm, value: 0.8 },
@@ -90,10 +84,21 @@ document.querySelectorAll("[data-job]").forEach((btn) => {
     const kind = btn.dataset.job;
     const values = await cncDialog(SPECS[kind]);
 
+
     if (values === null) {
       out.textContent = "exit status 1 (cancelled)";
       return;
     }
+
+    // Send asynchronously to Go backend
+    fetch('/api/dialog-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selection: values })
+    })
+    .then(response => response.text())
+    .then(data => console.log('Server response:', data))
+    .catch(err => console.error('Error:', err));
 
     const lines = Object.entries(values).map(([k, v]) => {
       const key = k.toUpperCase();
@@ -101,15 +106,6 @@ document.querySelectorAll("[data-job]").forEach((btn) => {
       if (typeof v === "number")  return key + "=" + v;
       return key + '="' + v + '"';
     });
-
-    // a couple of derived values you would want next
-    if (values.depth && values.doc) {
-      lines.push("PASSES=" + Math.max(1, Math.ceil(values.depth / values.doc)));
-    }
-    if (values.tooldia && values.side) {
-      const sign = values.side === "inside" ? -1 : 1;
-      lines.push("OFFSET=" + (sign * values.tooldia / 2).toFixed(3));
-    }
 
     out.textContent = "# " + kind + "\n" + lines.join("\n");
   });
