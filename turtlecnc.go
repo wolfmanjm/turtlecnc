@@ -87,27 +87,32 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // {"selection":{"jobname":"profile","width":100,"length":150,"depth":6,"tooldia":6.35,"doc":1.5,"side":"inside"}
+    // {"kind": "rectangle", values: {"jobname":"profile","width":100,"length":150,"depth":6,"tooldia":6.35,"doc":1.5,"side":"inside"}
     m := make(map[string]any)
     json.Unmarshal(buf, &m)
 
-    rm, ok := m["selection"].(map[string]any)
+    kind, ok := m["kind"]
     if !ok {
-        fmt.Println("reply does not have selection")
+        fmt.Println("reply does not have a kind")
         return
     }
 
-    jobname := rm["jobname"]
+    values, ok := m["values"].(map[string]any)
+     if !ok {
+        fmt.Println("reply does not have any values")
+        return
+    }
 
-    switch jobname {
+    // handle each job kind
+    switch kind {
     case "rectangle":
-        fmt.Println(fmt.Sprintf("We got a rectangle job, width %.4f", rm["width"]))
+        fmt.Println(fmt.Sprintf("We got a rectangle job, values: %v", values))
     case "hole":
         fmt.Println("We got a hole job")
     case "circle":
         fmt.Println("We got a circle job")
     default:
-        fmt.Println("Unknown job: ", jobname)
+        fmt.Println("Unknown job: ", kind)
         return
     }
 

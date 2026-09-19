@@ -19,6 +19,7 @@
 </div>
 
 <pre class="cd-output" id="out" aria-live="polite"></pre>
+<pre class="cd-output" id="msgs" aria-live="polite"></pre>
 
 <div class="cd-statusbar">Tab/Shift-Tab move &#183; Space selects &#183; Enter confirms &#183; Esc cancels</div>
 
@@ -78,6 +79,7 @@ const SPECS = {
 /* ---- open one and print what a shell script would read back ------------- */
 
 const out = document.getElementById("out");
+const msgs = document.getElementById("msgs");
 
 document.querySelectorAll("[data-job]").forEach((btn) => {
   btn.addEventListener("click", async () => {
@@ -94,12 +96,13 @@ document.querySelectorAll("[data-job]").forEach((btn) => {
     fetch('/api/dialog-result', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ selection: values })
+      body: JSON.stringify({ kind: kind, values: values })
     })
     .then(response => response.text())
-    .then(data => console.log('Server response:', data))
-    .catch(err => console.error('Error:', err));
+    .then(data => {console.log('Server response:', data); msgs.textContent = data; })
+    .catch(err => {console.error('Error:', err); msgs.textContent = "Error: " + err; })
 
+    /* debug data */
     const lines = Object.entries(values).map(([k, v]) => {
       const key = k.toUpperCase();
       if (typeof v === "boolean") return key + "=" + (v ? 1 : 0);
