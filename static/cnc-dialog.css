@@ -1,0 +1,205 @@
+/* ==========================================================================
+   cnc-dialog.css — ncurses `dialog(1)` look for HTML forms
+   Pairs with cnc-dialog.js. Nothing here depends on that script, so the
+   classes can also be hand-written into static markup.
+   ========================================================================== */
+
+:root {
+  --cd-blue:      #0000a8;   /* backdrop, inactive field text bg */
+  --cd-blue-dark: #000080;
+  --cd-cyan:      #00a8a8;   /* window body                      */
+  --cd-white:     #ffffff;
+  --cd-black:     #000000;
+  --cd-red:       #a80000;   /* hotkey letter                    */
+  --cd-yellow:    #fcfc54;   /* hotkey on a selected button      */
+  --cd-shadow:    rgba(0, 0, 0, .55);
+  --cd-mono: "DejaVu Sans Mono", "Liberation Mono", Menlo, Consolas,
+             "Courier New", monospace;
+  --cd-labelw: 16ch;         /* overridden per dialog by the script */
+}
+
+/* --- page chrome: backtitle bar and help line ---------------------------- */
+
+.cd-screen {
+  min-height: 100vh;
+  margin: 0;
+  font: 16px/1.5 var(--cd-mono);
+  color: var(--cd-white);
+  background-color: var(--cd-blue);
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(255,255,255,.10) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.10) 0 1px, transparent 1px 8px);
+  padding: 0 12px 34px;
+}
+
+.cd-backtitle {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 8px 2px;
+  border-bottom: 1px solid rgba(255,255,255,.8);
+  margin: 0 -12px 0;
+}
+
+.cd-statusbar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  padding: 2px 8px;
+  font: .9rem/1.5 var(--cd-mono);
+  color: var(--cd-white);
+  background: var(--cd-blue-dark);
+}
+
+/* --- the window --------------------------------------------------------- */
+
+dialog.cd {
+  width: min(640px, calc(100vw - 32px));
+  font: 16px/1.5 var(--cd-mono);
+  color: var(--cd-black);
+  background: var(--cd-cyan);
+  border: 2px solid;
+  border-color: var(--cd-white) var(--cd-blue-dark) var(--cd-blue-dark) var(--cd-white);
+  border-radius: 0;
+  box-shadow: 10px 10px 0 var(--cd-shadow);
+  padding: 10px 18px 14px;
+  margin: 8vh auto auto;
+}
+
+dialog.cd::backdrop {
+  background-color: var(--cd-blue);
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(255,255,255,.10) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.10) 0 1px, transparent 1px 8px);
+}
+
+.cd-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cd-blue);
+  text-align: center;
+  letter-spacing: .04em;
+  margin: -22px 0 14px;            /* lift the title onto the top border */
+}
+.cd-title span { background: var(--cd-cyan); padding: 0 8px; }
+
+.cd-blurb { margin: 0 0 14px; }
+
+/* --- rows --------------------------------------------------------------- */
+
+.cd-row {
+  display: grid;
+  grid-template-columns: var(--cd-labelw) 1fr;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cd-row > label { white-space: nowrap; }
+
+.cd-input {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.cd-unit { color: var(--cd-blue-dark); }
+
+dialog.cd input[type="text"],
+dialog.cd input[type="number"],
+dialog.cd select {
+  font: inherit;
+  color: var(--cd-white);
+  background: var(--cd-blue);
+  border: 0;
+  border-radius: 0;
+  padding: 0 6px;
+  width: 100%;
+  max-width: 26ch;
+  appearance: none;
+  -moz-appearance: textfield;
+}
+dialog.cd input[type="number"]::-webkit-outer-spin-button,
+dialog.cd input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+dialog.cd input:focus,
+dialog.cd select:focus {
+  outline: none;
+  background: var(--cd-white);
+  color: var(--cd-blue);
+}
+dialog.cd input:invalid { background: var(--cd-red); color: var(--cd-white); }
+
+/* --- radiolist / checklist ---------------------------------------------- */
+
+dialog.cd fieldset { border: 0; margin: 12px 0 4px; padding: 0; }
+dialog.cd legend    { padding: 0; margin-bottom: 4px; }
+
+.cd-choice {
+  display: block;
+  cursor: pointer;
+  padding-left: var(--cd-labelw);
+}
+.cd-choice input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.cd-mark::after                              { content: "( ) "; }
+.cd-choice input:checked ~ .cd-mark::after   { content: "(*) "; }
+.cd-check .cd-mark::after                    { content: "[ ] "; }
+.cd-check input:checked ~ .cd-mark::after    { content: "[X] "; }
+
+.cd-choice input:checked ~ .cd-mark,
+.cd-choice input:checked ~ .cd-text {
+  color: var(--cd-white);
+  background: var(--cd-blue);
+}
+.cd-choice input:focus-visible ~ .cd-mark,
+.cd-choice input:focus-visible ~ .cd-text {
+  color: var(--cd-blue);
+  background: var(--cd-white);
+}
+
+/* --- buttons ------------------------------------------------------------ */
+
+.cd-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 18px;
+}
+.cd-btn {
+  font: inherit;
+  color: var(--cd-black);
+  background: var(--cd-cyan);
+  border: 0;
+  border-radius: 0;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.cd-btn .cd-hot { color: var(--cd-red); }
+.cd-btn:hover,
+.cd-btn:focus-visible {
+  outline: none;
+  background: var(--cd-blue);
+  color: var(--cd-white);
+}
+.cd-btn:hover .cd-hot,
+.cd-btn:focus-visible .cd-hot { color: var(--cd-yellow); }
+
+/* --- shell-style output block ------------------------------------------- */
+
+.cd-output {
+  font: 16px/1.5 var(--cd-mono);
+  color: var(--cd-white);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 18px 0 0;
+}
+.cd-output:empty { display: none; }
+
+/* --- narrow screens ------------------------------------------------------ */
+
+@media (max-width: 560px) {
+  .cd-screen, dialog.cd, .cd-output { font-size: 14px; }
+  .cd-row     { grid-template-columns: 1fr; gap: 2px; }
+  .cd-choice  { padding-left: 0; }
+  dialog.cd   { box-shadow: 6px 6px 0 var(--cd-shadow); margin-top: 4vh; }
+}
