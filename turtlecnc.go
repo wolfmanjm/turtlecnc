@@ -7,11 +7,12 @@ import (
 	"log"
 	"math"
 	"net/http"
-    "strings"
+	"os"
 )
 
 // globals used by many of the jobs
-var (
+// TODO run cam jobs in thread and use thread local storage?
+type globals struct {
 	safe_z        float64
 	tool_diameter float64
 	doc           float64
@@ -20,10 +21,20 @@ var (
 	default_depth float64
 	laser         bool
 	lathe         bool
-)
+}
 
-// local state
-var abs_state     bool
+func (g *globals) newGlobals() {
+    g.laser = false
+    g.lathe = false
+    g.feedrate = 1800
+    g.plunge_rate = 0
+    g.safe_z = 20
+    g.tool_diameter = 3.175
+    g.doc = 0.2
+    g.default_depth = 6.35
+}
+
+var abs_state = true
 
 type Coord struct {
     X, Y, Z float64
@@ -51,18 +62,7 @@ func YZ(y, z float64) Coord {
     return Coord{math.NaN(), y, z}
 }
 
-
 func main() {
-	laser = false
-	lathe = false
-	feedrate = 1800
-	plunge_rate = 0
-	safe_z = 20
-	tool_diameter = 3.175
-	doc = 0.2
-	default_depth = 6.35
-	abs_state = true
-
 	//testit()
     runServer()
 }
@@ -73,41 +73,35 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // var payload DialogPayload
-    // Decode JSON data straight from the request body
-    // err := json.NewDecoder(r.Body).Decode(&payload)
-    // if err != nil {
-    //     http.Error(w, err.Error(), http.StatusBadRequest)
-    //     return
-    // }
-//    fmt.Printf("Asynchronously received option: %s\n", r.Body)
-
     buf, err := io.ReadAll(r.Body)
     if err != nil {
-        fmt.Println(fmt.Errorf("readall error: %w", err))
+        fmt.Println()
+        http.Error(w, fmt.Sprint("readall error: %w", err), http.StatusInternalServerError)
         return
     }
 
-    // {"kind": "rectangle", values: {"jobname":"profile","width":100,"length":150,"depth":6,"tooldia":6.35,"doc":1.5,"side":"inside"}
     m := make(map[string]any)
     json.Unmarshal(buf, &m)
 
     kind, ok := m["kind"]
     if !ok {
-        fmt.Println("reply does not have a kind")
+        http.Error(w, fmt.Sprint("reply does not have a kind"), http.StatusInternalServerError)
         return
     }
 
     values, ok := m["values"].(map[string]any)
      if !ok {
-        fmt.Println("reply does not have any values")
+        http.Error(w, fmt.Sprint("reply does not have any values"), http.StatusInternalServerError)
         return
     }
 
     // handle each job kind
+    // TODO make this a goroutine
     switch kind {
     case "rectangle":
         fmt.Println(fmt.Sprintf("We got a rectangle job, values: %v", values))
+        w.Header().Set("Content-Type", "application/text")
+        rectangleJob(w, values)
     case "hole":
         fmt.Println("We got a hole job")
     case "circle":
@@ -116,11 +110,51 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
         fmt.Println("Unknown job: ", kind)
         return
     }
+}
 
-    // Send JSON response back
-    w.Header().Set("Content-Type", "application/text")
-    test_response := []byte(strings.Repeat("This is a line\n", 100))
-    w.Write(test_response)
+func rectangleJob(w io.Writer, v map[string]any) {
+    // depth:6 doc:1.5 feedrate:1400 jobname:rectangle length:150 rpm:10000 side:laser tooldia:6.35 width:100
+    var g globals
+    g.newGlobals()
+
+    g.laser = false
+
+    inside := true
+    switch v["side"] {
+    case "inside":
+        inside = true
+    case "outside":
+        inside = false
+    case "laser":
+        g.laser = true
+    default:
+        fmt.Fprintf(w, "Unknown side: %v", v["side"])
+        return
+    }
+
+    g.tool_diameter = v["tooldia"].(float64)
+    g.doc = v["doc"].(float64)
+
+    var args = map[string]float64 {
+        "width": v["width"].(float64),
+        "length": v["length"].(float64),
+        "depth": v["depth"].(float64),
+        "feedrate": v["feedrate"].(float64),
+    }
+
+    var err error
+    // FIXME this needs to be context
+    output_port = w
+    defer resetOutput()
+
+    if err = Rectangle(g, inside, args); err != nil {
+        fmt.Fprintf(w, "Rectangle() failed: %w", err)
+        return
+    }
+}
+
+func resetOutput() {
+	output_port = os.Stdout
 }
 
 func runServer() {
@@ -135,16 +169,17 @@ func runServer() {
     }
 }
 
-// output functions, TODO redirect to a file or to web write
+var output_port io.Writer = os.Stdout
+
 func output(s ...string) {
-	for _, o := range s {
-		fmt.Print(o)
-	}
+    for _, o := range s {
+        fmt.Fprintf(output_port, o)
+    }
 }
 
 func outputnl(s ...string) {
-	output(s...)
-	fmt.Println()
+    output(s...)
+    output("\n")
 }
 
 func g90() {
@@ -223,11 +258,11 @@ func _expand(w, l, d float64) (float64, float64, float64, float64) {
 }
 
 // profiles a rectangle of given size, inside or outside to the given depth using the depth of cut
-func Rectangle(inside bool, args map[string]float64) error {
+func Rectangle(g globals, inside bool, args map[string]float64) error {
     // cuts a rectangle conventional milling, ramps to depth in the first X line, but recuts to final depth as last operation
     var w, l, fr float64
     var ok bool
-    var save_doc = doc
+    var doc = g.doc
 
     if w, ok = args["width"]; !ok {
         return fmt.Errorf("width required")
@@ -238,10 +273,10 @@ func Rectangle(inside bool, args map[string]float64) error {
     }
 
     if fr, ok = args["feedrate"]; !ok {
-        fr = feedrate
+        fr = g.feedrate
     }
 
-    if laser {
+    if g.laser {
         outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, for Laser)", w, l))
         if !math.IsNaN(fr) {
             SetFeedrate(fr)
@@ -252,20 +287,20 @@ func Rectangle(inside bool, args map[string]float64) error {
         Cutby(Y(-l))
 
     } else {
-        depth := -default_depth
+        depth := -g.default_depth
         if i, ok := args["depth"]; ok {
             depth = -i
         }
 
-        outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", w, l, inside, -depth, doc, tool_diameter))
+        outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", w, l, inside, -depth, g.doc, g.tool_diameter))
 
         // shrink rectangle if inside cut or expand if outside cut
 
         var xoff, yoff float64
         if inside {
-            xoff, yoff, w, l = _shrink(w, l, tool_diameter)
+            xoff, yoff, w, l = _shrink(w, l, g.tool_diameter)
         } else {
-            xoff, yoff, w, l = _expand(w, l, tool_diameter)
+            xoff, yoff, w, l = _expand(w, l, g.tool_diameter)
         }
 
         // adjust start point for tool diameter
@@ -302,13 +337,12 @@ func Rectangle(inside bool, args map[string]float64) error {
             if done {
                 // we do first line again to get it completely to depth
                 Cutby(X(w))
-                Moveto(Z(safe_z))
+                Moveto(Z(g.safe_z))
                 Moveby(X(-w))
             }
         }
     }
     Absolute()
-    doc = save_doc
     return nil
 }
 
@@ -333,11 +367,11 @@ func _circle(radius float64, segments int) []point {
 }
 
 // Profiles a circle of given radius, inside or outside
-func Circle(inside bool, args map[string]float64) error {
+func Circle(g globals, inside bool, args map[string]float64) error {
     var radius, fr float64
     var ok bool
     var segments int
-    var save_doc = doc
+    var doc = g.doc
 
     if radius, ok = args["radius"]; !ok {
         if radius, ok = args["diameter"]; !ok {
@@ -353,10 +387,10 @@ func Circle(inside bool, args map[string]float64) error {
     }
 
     if fr, ok = args["feedrate"]; !ok {
-        fr = feedrate
+        fr = g.feedrate
     }
 
-    if laser {
+    if g.laser {
         outputnl(fmt.Sprintf("(Circle: radius %.4f mm, segments %v for laser)", radius, segments))
         pa := _circle(radius, segments)
         SetFeedrate(fr)
@@ -375,17 +409,17 @@ func Circle(inside bool, args map[string]float64) error {
         Moveby(XY(-p0.x, -p0.y))
 
     } else {
-        depth := -default_depth
+        depth := -g.default_depth
         if i, ok := args["depth"]; ok {
             depth = -i
         }
 
-        outputnl(fmt.Sprintf("(Circle: radius %.4f mm, segments %v, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", radius, segments, inside, -depth, doc, tool_diameter))
+        outputnl(fmt.Sprintf("(Circle: radius %.4f mm, segments %v, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", radius, segments, inside, -depth, doc, g.tool_diameter))
 
         if inside {
-            radius = radius - tool_diameter/2.0
+            radius = radius - g.tool_diameter/2.0
         } else {
-            radius = radius + tool_diameter/2.0
+            radius = radius + g.tool_diameter/2.0
         }
 
         pa := _circle(radius, segments)
@@ -429,19 +463,18 @@ func Circle(inside bool, args map[string]float64) error {
             }
         }
 
-        Moveto(Z(safe_z))
+        Moveto(Z(g.safe_z))
         Moveby(XY(-p0.x, -p0.y))
     }
 
     Absolute()
-    doc = save_doc
     return nil
 }
 
-func Hole(args map[string]float64) error {
+func Hole(g globals, args map[string]float64) error {
     var radius, fr float64
     var ok bool
-    var save_doc = doc
+    var doc = g.doc
 
     if radius, ok = args["radius"]; !ok {
         if radius, ok = args["diameter"]; !ok {
@@ -450,22 +483,22 @@ func Hole(args map[string]float64) error {
         radius = radius / 2
     }
 
-    if !laser && radius*2.0 <= tool_diameter {
-        return fmt.Errorf("cannot make holes smaller than tool diameter %v", tool_diameter)
+    if !g.laser && radius*2.0 <= g.tool_diameter {
+        return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.tool_diameter)
     }
 
     if fr, ok = args["feedrate"]; !ok {
-        fr = feedrate
+        fr = g.feedrate
     }
 
     var off, depth float64
-    if laser {
+    if g.laser {
         off = radius
         outputnl(fmt.Sprintf("(Hole diameter: %.4f mm for laser)", radius*2))
 
     } else {
-        off = (radius - tool_diameter/2.0) // offset due to tool diameter
-        depth = -default_depth
+        off = (radius - g.tool_diameter/2.0) // offset due to tool diameter
+        depth = -g.default_depth
         if i, ok := args["depth"]; ok {
             depth = -i
         }
@@ -475,7 +508,7 @@ func Hole(args map[string]float64) error {
     var peck float64
     if peck, ok = args["peck"]; !ok {
         peck = 0
-        if radius*2.0 <= tool_diameter+2 {
+        if radius*2.0 <= g.tool_diameter+2 {
             fmt.Println("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
         }
     } else {
@@ -486,7 +519,7 @@ func Hole(args map[string]float64) error {
     Moveby(X(off))
     Absolute()
 
-    if laser {
+    if g.laser {
         outputnl(fmt.Sprintf("G2 J0 I%.4f F%.1f", -off, fr))
         Moveby(X(-off))
 
@@ -511,7 +544,7 @@ func Hole(args map[string]float64) error {
             // see if we need to peck to get rid of swarf
             if peck > 0 && delta > peck {
                 delta = 0
-                Moveto(Z(safe_z))
+                Moveto(Z(g.safe_z))
                 outputnl("G4 S1")
                 Cutto(Z(z))
             }
@@ -527,11 +560,11 @@ func Hole(args map[string]float64) error {
         }
     }
 
-    Moveto(Z(safe_z))
+    Moveto(Z(g.safe_z))
     // center again
     Moveby(X(-off))
     Absolute()
-    doc = save_doc
+
     return nil
 }
 
@@ -542,27 +575,30 @@ func testit() {
     Moveto(Coord{1.2, 3.4, math.NaN()})
     Pause("test it")
 
-    laser = false
-    tool_diameter = 4
-    doc = 1
+    var g globals
+    g.newGlobals()
+
+    g.laser = false
+    g.tool_diameter = 4
+    g.doc = 1
     var args = map[string]float64 {"width": 12.0, "length": 3.4, "depth": 2, "feedrate": 1000.0}
-    if err:= Rectangle(false, args); err != nil {
+    if err:= Rectangle(g, false, args); err != nil {
         panic(err)
     }
 
     Moveto(XYZ(20, 20, 0))
-    laser = false
+    g.laser = false
     args = map[string]float64 {"radius": 10.0, "segments": 64, "depth": 2, "feedrate": 1000.0}
-    if err:= Circle(false, args); err != nil {
+    if err:= Circle(g, false, args); err != nil {
         panic(err)
     }
 
     //Moveto(XYZ(0, 0, 0))
     Moveto(Z(0))
-    laser = false
-    doc = 0.2
+    g.laser = false
+    g.doc = 0.2
     args = map[string]float64 {"radius": 5.0, "depth": 2, "peck": 1, "feedrate": 1000.0}
-    if err:= Hole(args); err != nil {
+    if err:= Hole(g, args); err != nil {
         panic(err)
     }
 }

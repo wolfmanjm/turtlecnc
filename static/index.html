@@ -18,7 +18,6 @@
   <button class="cd-btn" data-job="hole">&lt; &nbsp;<span class="cd-hot">H</span>ole&nbsp; &gt;</button>
 </div>
 
-<pre class="cd-output" id="out" aria-live="polite"></pre>
 <pre class="cd-output" id="msgs" aria-live="polite"></pre>
 <div class="cd-statusbar">Tab/Shift-Tab move &#183; Space selects &#183; Enter confirms &#183; Esc cancels</div>
 
@@ -31,6 +30,8 @@
 <span>.nc</span>
 <button onclick="savegcode()">Save to File</button>
 <button onclick="copygcode()">Copy GCode</button>
+<hr>
+<pre class="cd-output" id="out" aria-live="polite"></pre>
 
 <script src="cnc-dialog.js"></script>
 <script>
@@ -41,16 +42,17 @@ const mm = { type: "number", step: 0.001, min: 0, unit: "mm" };
 const SPECS = {
   rectangle: {
     title: "Rectangle profile",
-    blurb: "Stock and cutter values, then which side of the line to run.",
+    blurb: "Stock and cutter values, mill type inside/outside/laser.",
     fields: [
       { name: "jobname", label: "Job name", type: "text", value: "rectangle", maxlength: 40 },
       { name: "width",   label: "Width",         ...mm, value: 100 },
       { name: "length",  label: "Length",        ...mm, value: 150 },
       { name: "depth",   label: "Depth",         ...mm, value: 6 },
       { name: "tooldia", label: "Tool diameter", ...mm, value: 6.35, min: 0.001 },
-      { name: "doc",     label: "Depth of cut",  ...mm, value: 1.5, min: 0.001,
-        unit: "mm per pass" },
-      { name: "side", label: "Cutter offset", type: "radio", value: "inside",
+      { name: "doc",     label: "Depth of cut",  ...mm, value: 1.5, min: 0.001, unit: "mm per pass" },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
+      { name: "rpm",     label: "Spindle",       type: "number", value: 10000, unit: "RPM"},
+      { name: "side",    label: "Cutter offset", type: "radio", value: "inside",
         options: [
           { value: "inside",  label: "Inside \u2014 cut within the boundary" },
           { value: "outside", label: "Outside \u2014 cut around the boundary" },
