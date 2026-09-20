@@ -20,8 +20,17 @@
 
 <pre class="cd-output" id="out" aria-live="polite"></pre>
 <pre class="cd-output" id="msgs" aria-live="polite"></pre>
-
 <div class="cd-statusbar">Tab/Shift-Tab move &#183; Space selects &#183; Enter confirms &#183; Esc cancels</div>
+
+<p>Resulting GCode (You can click the Copy button to copy it the clipboard then paste it into your MDI):</p>
+
+<textarea class="gcoderesult" id="gcoderesult">
+</textarea>
+<br><br>
+<input type="text" id="filenameInput" placeholder="Enter filename" value="my-text-file">
+<span>.nc</span>
+<button onclick="savegcode()">Save to File</button>
+<button onclick="copygcode()">Copy GCode</button>
 
 <script src="cnc-dialog.js"></script>
 <script>
@@ -80,6 +89,7 @@ const SPECS = {
 
 const out = document.getElementById("out");
 const msgs = document.getElementById("msgs");
+const myGCode = document.getElementById("gcoderesult");
 
 document.querySelectorAll("[data-job]").forEach((btn) => {
   btn.addEventListener("click", async () => {
@@ -98,9 +108,21 @@ document.querySelectorAll("[data-job]").forEach((btn) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ kind: kind, values: values })
     })
-    .then(response => response.text())
-    .then(data => {console.log('Server response:', data); msgs.textContent = data; })
-    .catch(err => {console.error('Error:', err); msgs.textContent = "Error: " + err; })
+    .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error, status = ${response.status}`);
+        }
+        return response.text();
+    })
+    .then((text) => {
+        myGCode.value = text;
+    })
+    .catch((error) => {
+        msgs.textContent = `Error: ${error.message}`;
+    });
+
+    // set filename
+	document.getElementById('filenameInput').value = values['jobname']
 
     /* debug data */
     const lines = Object.entries(values).map(([k, v]) => {
@@ -113,6 +135,30 @@ document.querySelectorAll("[data-job]").forEach((btn) => {
     out.textContent = "# " + kind + "\n" + lines.join("\n");
   });
 });
+
+function copygcode() {
+  // Get the text field
+  navigator.clipboard.writeText(myGCode.value)
+  msgs.textContent = "GCode copied to clipboard"
+}
+
+function savegcode() {
+  const textContent = myGCode.value;
+  const blob = new Blob([textContent], { type: 'text/plain' });
+  const anchor = document.createElement('a');
+  anchor.href = URL.createObjectURL(blob);
+
+  let filename = document.getElementById('filenameInput').value.trim();
+  if (!filename) {
+    filename = 'gcode';
+  }
+
+  anchor.download = `${filename}.nc`;
+  anchor.click();
+  URL.revokeObjectURL(anchor.href);
+  msgs.textContent = "GCode saved to file"
+}
+
 </script>
 </body>
 </html>

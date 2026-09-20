@@ -203,3 +203,17 @@ dialog.cd legend    { padding: 0; margin-bottom: 4px; }
   .cd-choice  { padding-left: 0; }
   dialog.cd   { box-shadow: 6px 6px 0 var(--cd-shadow); margin-top: 4vh; }
 }
+
+/* display Gcode here */
+.gcoderesult {
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.7);
+  line-height: 1;
+  background: var(--cd-black);
+  color: var(--cd-white);
+  height: 400px;
+  width: 90%;
+  overflow: auto;
+}

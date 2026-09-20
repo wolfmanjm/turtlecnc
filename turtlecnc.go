@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+    "strings"
 )
 
 // globals used by many of the jobs
@@ -117,8 +118,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // Send JSON response back
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+    w.Header().Set("Content-Type", "application/text")
+    test_response := []byte(strings.Repeat("This is a line\n", 100))
+    w.Write(test_response)
 }
 
 func runServer() {
