@@ -14,6 +14,7 @@ type camvars struct {
 	Feedrate      float64
 	Plunge_rate   float64
 	default_depth float64
+	RPM 		  float64
 	Laser         bool
 	Lathe         bool
 	abs_state	  bool
@@ -30,6 +31,7 @@ func NewCam(out io.Writer) *camvars {
     g.Safe_z = 20
     g.Tool_diameter = 3.175
     g.Doc = 0.2
+    g.RPM = 0
     g.default_depth = 6.35
 	g.abs_state = true
 	g.output_port = out
@@ -188,6 +190,11 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
             xoff, yoff, w, l = _expand(w, l, g.Tool_diameter)
         }
 
+    	if g.RPM > 0.001 {
+     		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
+     		g.outputnl("G4 S3")
+     	}
+
         // adjust start point for tool diameter
         g.Moveby(XY(xoff, yoff))
         // set feedrate
@@ -224,8 +231,11 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
                 g.Cutby(X(w))
                 g.Moveto(Z(g.Safe_z))
                 g.Moveby(X(-w))
-            }
-        }
+               	if g.RPM > 0.001 {
+		     		g.outputnl("M5")
+		     	}
+		     }
+     	}
     }
     g.Absolute()
     g.outputnl("(-- Rectangle --)")
@@ -378,6 +388,7 @@ func (g *camvars) Hole(args map[string]float64) error {
         fr = g.Feedrate
     }
 
+    var peck float64
     var off, depth float64
     if g.Laser {
         off = radius
@@ -390,16 +401,20 @@ func (g *camvars) Hole(args map[string]float64) error {
             depth = -i
         }
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm, depth: %.4f, doc: %.4f)", radius*2, -depth, doc))
-    }
 
-    var peck float64
-    if peck, ok = args["peck"]; !ok {
-        peck = 0
-        if radius*2.0 <= g.Tool_diameter+2 {
-            fmt.Println("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
-        }
-    } else {
-        g.outputnl(fmt.Sprintf("(Peck set to: %.4f mm)", peck))
+	    if peck, ok = args["peck"]; !ok {
+	        peck = 0
+	        if radius*2.0 <= g.Tool_diameter+2 {
+	            fmt.Println("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
+	        }
+	    } else {
+	        g.outputnl(fmt.Sprintf("(Peck set to: %.4f mm)", peck))
+	    }
+
+       	if g.RPM > 0.001 {
+     		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
+     		g.outputnl("G4 S3")
+     	}
     }
 
     // move to start point
@@ -408,9 +423,8 @@ func (g *camvars) Hole(args map[string]float64) error {
 
     if g.Laser {
         g.outputnl(fmt.Sprintf("G2 J0 I%.4f F%.1f", -off, fr))
-        g.Moveby(X(-off))
 
-    } else {
+     } else {
         g.Moveto(Z(0))
         z := 0.0
         g.SetFeedrate(fr)
@@ -445,9 +459,14 @@ func (g *camvars) Hole(args map[string]float64) error {
                 done = true
             }
         }
+
+    	g.Moveto(Z(g.Safe_z))
+
+       	if g.RPM > 0.001 {
+     		g.outputnl("M5")
+     	}
     }
 
-    g.Moveto(Z(g.Safe_z))
     // center again
     g.Moveby(X(-off))
     g.Absolute()

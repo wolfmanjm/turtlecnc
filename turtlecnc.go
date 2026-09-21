@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-	cams.Testit()
-    //runServer()
+	//cams.Testit()
+    runServer()
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,19 +43,21 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    w.Header().Set("Content-Type", "application/text")
+
     // handle each job kind
-    // TODO make this a goroutine
     switch kind {
     case "rectangle":
-        fmt.Println(fmt.Sprintf("We got a rectangle job, values: %v", values))
-        w.Header().Set("Content-Type", "application/text")
+        log.Println(fmt.Sprintf("We got a rectangle job, values: %v", values))
         rectangleJob(w, values)
     case "hole":
-        fmt.Println("We got a hole job")
+        log.Println("We got a hole job", values)
+        holeJob(w, values)
     case "circle":
-        fmt.Println("We got a circle job")
+        log.Println("We got a circle job", values)
     default:
-        fmt.Println("Unknown job: ", kind)
+        log.Println("Unknown kind: ", kind)
+        fmt.Fprintf(w, "Unknown kind: ", kind)
         return
     }
 }
@@ -81,6 +83,7 @@ func rectangleJob(w io.Writer, v map[string]any) {
 
     g.Tool_diameter = v["tooldia"].(float64)
     g.Doc = v["doc"].(float64)
+    g.RPM = v["rpm"].(float64)
 
     var args = map[string]float64 {
         "width": v["width"].(float64),
@@ -89,11 +92,32 @@ func rectangleJob(w io.Writer, v map[string]any) {
         "feedrate": v["feedrate"].(float64),
     }
 
-    var err error
-
-    if err = g.Rectangle(inside, args); err != nil {
+     if err := g.Rectangle(inside, args); err != nil {
         fmt.Fprintf(w, "Rectangle() failed: %w", err)
-        return
+    }
+}
+
+func holeJob(w io.Writer, v map[string]any) {
+    // depth:12 feedrate:1400 holedia:5 jobname:hole laser:false peck:0 rpm:10000 tooldia:6.35
+    g := cams.NewCam(w)
+
+    g.Laser = v["laser"].(bool)
+
+    if !g.Laser {
+        g.Tool_diameter = v["tooldia"].(float64)
+        g.Doc = v["doc"].(float64)
+        g.RPM = v["rpm"].(float64)
+    }
+
+    var args = map[string]float64 {
+        "diameter": v["holedia"].(float64),
+        "depth": v["depth"].(float64),
+        "feedrate": v["feedrate"].(float64),
+        "peck": v["peck"].(float64),
+    }
+
+     if err := g.Hole(args); err != nil {
+        fmt.Fprintf(w, "Hole() failed: %v", err.Error())
     }
 }
 

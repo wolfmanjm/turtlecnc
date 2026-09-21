@@ -51,7 +51,7 @@ const SPECS = {
       { name: "tooldia", label: "Tool diameter", ...mm, value: 6.35, min: 0.001 },
       { name: "doc",     label: "Depth of cut",  ...mm, value: 1.5, min: 0.001, unit: "mm per pass" },
       { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
-      { name: "rpm",     label: "Spindle",       type: "number", value: 10000, unit: "RPM"},
+      { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
       { name: "side",    label: "Cutter offset", type: "radio", value: "inside",
         options: [
           { value: "inside",  label: "Inside \u2014 cut within the boundary" },
@@ -65,9 +65,13 @@ const SPECS = {
     title: "Drill Helical Hole",
     fields: [
       { name: "jobname", label: "Job name", type: "text", value: "hole" },
-      { name: "holedia", label: "Hole diameter", ...mm, value: 5, min: 0.001 },
+      { name: "holedia", label: "Hole diameter", ...mm, value: 10, min: 0.001 },
       { name: "depth",   label: "Depth",         ...mm, value: 12 },
+      { name: "doc",     label: "Depth of cut",  ...mm, value: 1.5, min: 0.001, unit: "mm per pass" },
+      { name: "tooldia", label: "Tool diameter", ...mm, value: 6.35, min: 0.001 },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "peck",    label: "Peck depth",    ...mm, value: 0 },
+      { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
       { name: "laser",   label: "Laser", type: "check", value: false }
     ]
   },
