@@ -179,6 +179,10 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
         g.Cutby(Y(-l))
 
     } else {
+		if doc <= 0 {
+    		return fmt.Errorf("Depth of cut must be > 0")
+    	}
+
         depth := -g.default_depth
         if i, ok := args["depth"]; ok {
             depth = -i
@@ -310,6 +314,10 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
         g.Moveby(XY(-p0.x, -p0.y))
 
     } else {
+		if doc <= 0 {
+    		return fmt.Errorf("Depth of cut must be > 0")
+    	}
+
         depth := -g.default_depth
         if i, ok := args["depth"]; ok {
             depth = -i
@@ -387,6 +395,10 @@ func (g *camvars) Hole(args map[string]float64) error {
 
     if !g.Laser && radius*2.0 <= g.Tool_diameter {
         return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.Tool_diameter)
+    }
+
+    if doc <= 0 {
+    	return fmt.Errorf("Depth of cut must be > 0")
     }
 
     if fr, ok = args["feedrate"]; !ok || fr == 0 {
@@ -629,11 +641,15 @@ func (g *camvars) Sidemill(edge string, conventional bool, args map[string]float
     	t = "Climb"
     }
 
+	doc := g.Doc
+    if doc <= 0 {
+    	return fmt.Errorf("Depth of cut must be > 0")
+    }
+
     g.outputnl(fmt.Sprintf("(Sidemill %.4f mm along %v edge to depth of %.4f mm, %v)", l, edge, -depth, t))
 	g.outputnl(fmt.Sprintf("(MSG Move cutter to touch the %v edge and move to %v corner, and move to the required height)", edge, start))
 
 	retract := 1.0
-	doc := g.Doc
 	extra := g.Tool_diameter
 	d := depth
 
