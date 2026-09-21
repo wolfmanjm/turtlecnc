@@ -34,6 +34,7 @@ func (g *globals) newGlobals() {
     g.default_depth = 6.35
 }
 
+// this cannot be a global it needs to be request local
 var abs_state = true
 
 type Coord struct {
