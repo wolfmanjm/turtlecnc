@@ -16,6 +16,7 @@
   <button class="cd-btn" data-job="rectangle">&lt; &nbsp;<span class="cd-hot">R</span>ectangle&nbsp; &gt;</button>
   <button class="cd-btn" data-job="circle">&lt; &nbsp;<span class="cd-hot">C</span>ircle&nbsp; &gt;</button>
   <button class="cd-btn" data-job="hole">&lt; &nbsp;<span class="cd-hot">H</span>ole&nbsp; &gt;</button>
+  <button class="cd-btn" data-job="sidemill">&lt; &nbsp;<span class="cd-hot">S</span>ide Mill&nbsp; &gt;</button>
 </div>
 
 <pre class="cd-output" id="msgs" aria-live="polite"></pre>
@@ -66,7 +67,7 @@ const SPECS = {
     blurb: "Stock and cutter values, drills a helical hole with an endmill to the given depth",
     fields: [
       { name: "jobname", label: "Job name", type: "text", value: "hole" },
-      { name: "holedia", label: "Hole diameter", ...mm, value: 10, min: 0.001 },
+      { name: "diameter", label: "Hole diameter", ...mm, value: 10, min: 0.001 },
       { name: "depth",   label: "Depth",         ...mm, value: 12 },
       { name: "doc",     label: "Depth of cut",  ...mm, value: 1.5, min: 0.001, unit: "mm per pass" },
       { name: "tooldia", label: "Tool diameter", ...mm, value: 6.35, min: 0.001 },
@@ -79,21 +80,26 @@ const SPECS = {
 
   circle: {
     title: "Circle profile",
+    blurb: "Stock and cutter values, profiles a circle to the given depth",
     fields: [
-      { name: "jobname", label: "Job name",      type: "text", value: "circle" },
-      { name: "width",   label: "Width",         ...mm, value: 200 },
-      { name: "length",  label: "Length",        ...mm, value: 300 },
-      { name: "stock",   label: "Stock to remove", ...mm, value: 0.8 },
-      { name: "tooldia", label: "Tool diameter", ...mm, value: 50, min: 0.001 },
-      { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100,
-        value: 70, unit: "%" },
-      { name: "climb", label: "Climb milling", type: "check", value: true }
+      { name: "diameter",   label: "Diameter",   ...mm, value: 20 },
+      { name: "depth",   label: "Depth",         ...mm, value: 6 },
+      { name: "tooldia", label: "Tool diameter", ...mm, value: 6.35, min: 0.001 },
+      { name: "doc",     label: "Depth of cut",  ...mm, value: 1.5, min: 0.001, unit: "mm per pass" },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
+      { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
+      { name: "side",    label: "Cutter offset", type: "radio", value: "inside",
+        options: [
+          { value: "inside",  label: "Inside \u2014 cut within the boundary" },
+          { value: "outside", label: "Outside \u2014 cut around the boundary" },
+          { value: "laser",   label: "Laser \u2014 cut on the boundary" }
+        ]}
     ]
-  }
+  },
 
   milltop: {
     title: "Mill a surface flat",
-    blurb: "Starts at current position and z height and mills over the given width, length to given depth"
+    blurb: "Starts at current position and z height and mills over the given width, length to given depth",
 
     fields: [
       { name: "jobname", label: "Job name",      type: "text", value: "surface" },
@@ -103,6 +109,31 @@ const SPECS = {
       { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "tooldia", label: "Tool diameter", ...mm, value: 50, min: 0.001 },
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
+    ]
+  },
+
+  sidemill: {
+    title: "Side mill an edge",
+    blurb: "Starts at current position and z height and side mills over the given width to given depth using specified depth of cut",
+
+    fields: [
+      { name: "jobname", label: "Job name",      type: "text", value: "sidemill" },
+      { name: "length",  label: "Length",        ...mm, value: 300 },
+      { name: "depth",   label: "Depth",         ...mm, value: 1 },
+      { name: "doc",     label: "Depth of cut",  ...mm, value: 0.5, min: 0.001, unit: "mm per pass" },
+
+      { name: "side",    label: "Edge to mill", type: "radio", value: "bottom",
+        options: [
+          { value: "bottom",  label: "Mill the Bottom edge" },
+          { value: "top", label: "Mill the top edge" },
+          { value: "left",   label: "Mill the left edge" },
+          { value: "right",   label: "Mill the right edge" },
+        ]},
+
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
+      { name: "tooldia", label: "Tool diameter", ...mm, value: 12, min: 0.001 },
+      { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
+      { name: "conventional", label: "Conventional milling", type: "check", value: false }
     ]
   }
 };
@@ -118,17 +149,18 @@ document.querySelectorAll("[data-job]").forEach((btn) => {
     const kind = btn.dataset.job;
     const values = await cncDialog(SPECS[kind]);
 
-
     if (values === null) {
       out.textContent = "exit status 1 (cancelled)";
       return;
     }
 
+    values['kind'] = kind
+
     // Send asynchronously to Go backend
     fetch('/api/dialog-result', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: kind, values: values })
+      body: JSON.stringify(values)
     })
     .then((response) => {
         if (!response.ok) {

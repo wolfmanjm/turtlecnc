@@ -78,7 +78,7 @@ dialog.cd::backdrop {
   color: var(--cd-blue);
   text-align: center;
   letter-spacing: .04em;
-  margin: -22px 0 14px;            /* lift the title onto the top border */
+  margin: 0px 0 14px;            /* lift the title onto the top border */
 }
 .cd-title span { background: var(--cd-cyan); padding: 0 8px; }
 

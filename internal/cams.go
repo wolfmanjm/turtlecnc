@@ -153,15 +153,18 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
     var ok bool
     var doc = g.Doc
 
-    if w, ok = args["width"]; !ok {
+    w, ok = args["width"]
+    if !ok || w == 0 {
         return fmt.Errorf("width required")
     }
 
-    if l, ok = args["length"]; !ok {
+    l, ok = args["length"]
+    if !ok || l == 0 {
         return fmt.Errorf("length required")
     }
 
-    if fr, ok = args["feedrate"]; !ok {
+    fr, ok = args["feedrate"]
+    if !ok || fr == 0 {
         fr = g.Feedrate
     }
 
@@ -271,20 +274,20 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
     var segments int
     var doc = g.Doc
 
-    if radius, ok = args["radius"]; !ok {
-        if radius, ok = args["diameter"]; !ok {
+    if radius, ok = args["radius"]; !ok || radius == 0 {
+        if radius, ok = args["diameter"]; !ok || radius == 0 {
             return fmt.Errorf("radius or diameter required")
         }
         radius = radius * 2
     }
 
-    if s, ok := args["segments"]; ok {
+    if s, ok := args["segments"]; ok && s > 0 {
         segments = int(s)
     } else {
         segments = int(math.Round(radius*2 * math.Pi / 0.5))
     }
 
-    if fr, ok = args["feedrate"]; !ok {
+    if fr, ok = args["feedrate"]; !ok || fr == 0 {
         fr = g.Feedrate
     }
 
@@ -375,8 +378,8 @@ func (g *camvars) Hole(args map[string]float64) error {
     var ok bool
     var doc = g.Doc
 
-    if radius, ok = args["radius"]; !ok {
-        if radius, ok = args["diameter"]; !ok {
+    if radius, ok = args["radius"]; !ok || radius == 0 {
+        if radius, ok = args["diameter"]; !ok || radius == 0 {
             return fmt.Errorf("radius or diameter required")
         }
         radius = radius / 2
@@ -386,7 +389,7 @@ func (g *camvars) Hole(args map[string]float64) error {
         return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.Tool_diameter)
     }
 
-    if fr, ok = args["feedrate"]; !ok {
+    if fr, ok = args["feedrate"]; !ok || fr == 0 {
         fr = g.Feedrate
     }
 
@@ -483,25 +486,25 @@ func (g *camvars) Hole(args map[string]float64) error {
     var depth float64
     var overlap float64
 
-    if w, ok = args["width"]; !ok {
+    if w, ok = args["width"]; !ok || w == 0 {
         return fmt.Errorf("width required")
     }
 
-    if l, ok = args["length"]; !ok {
+    if l, ok = args["length"]; !ok || l == 0 {
         return fmt.Errorf("length required")
     }
 
-    if depth, ok = args["depth"]; !ok {
+    if depth, ok = args["depth"]; !ok || depth == 0 {
         return fmt.Errorf("depth required")
     }
 
-    if overlap, ok = args["stepover"]; ok {
+    if overlap, ok = args["stepover"]; ok && overlap > 0 {
     	overlap = (100.0-overlap)/100.0
     } else {
     	overlap = 0.4
     }
 
-    if fr, ok = args["feedrate"]; !ok {
+    if fr, ok = args["feedrate"]; !ok || fr == 0 {
         fr = g.Feedrate
     }
 
@@ -549,15 +552,15 @@ func (g *camvars) Sidemill(edge string, conventional bool, args map[string]float
     var ok bool
     var depth float64
 
-    if l, ok = args["length"]; !ok {
+    if l, ok = args["length"]; !ok || l == 0 {
         return fmt.Errorf("length required")
     }
 
-    if depth, ok = args["depth"]; !ok {
+    if depth, ok = args["depth"]; !ok || depth == 0 {
         return fmt.Errorf("depth required")
     }
 
-    if fr, ok = args["feedrate"]; !ok {
+    if fr, ok = args["feedrate"]; !ok || fr == 0 {
         fr = g.Feedrate
     }
 
