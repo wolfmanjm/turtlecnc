@@ -24,6 +24,7 @@ type camvars struct {
 func NewCam(out io.Writer) *camvars {
     var g camvars
 
+    // set defaults
     g.Laser = false
     g.Lathe = false
     g.Feedrate = 1800
@@ -39,7 +40,7 @@ func NewCam(out io.Writer) *camvars {
 	return &g
 }
 
-
+// Helpers for setting coordinates
 type Coord struct {
     X, Y, Z float64
 }
@@ -66,6 +67,7 @@ func YZ(y, z float64) Coord {
     return Coord{math.NaN(), y, z}
 }
 
+// output to specified port
 func (g camvars) output(s ...string) {
     for _, o := range s {
         fmt.Fprintf(g.output_port, o)
@@ -475,6 +477,68 @@ func (g *camvars) Hole(args map[string]float64) error {
     return nil
 }
 
+ func (g *camvars) Milltop(args map[string]float64) error {
+    var w, l, fr float64
+    var ok bool
+    var depth float64
+    var overlap float64
+
+    if w, ok = args["width"]; !ok {
+        return fmt.Errorf("width required")
+    }
+
+    if l, ok = args["length"]; !ok {
+        return fmt.Errorf("length required")
+    }
+
+    if depth, ok = args["depth"]; !ok {
+        return fmt.Errorf("depth required")
+    }
+
+    if overlap, ok = args["stepover"]; ok {
+    	overlap = (100.0-overlap)/100.0
+    } else {
+    	overlap = 0.4
+    }
+
+    if fr, ok = args["feedrate"]; !ok {
+        fr = g.Feedrate
+    }
+
+    g.outputnl(fmt.Sprintf("(Milltop %.4fx%.4f mm, depth: %.4f mm, tool: %.4f, stepover: %.2f)", w, l, -depth, g.Tool_diameter, overlap))
+	g.outputnl("(MSG Position tool at front left of surface just touching it, set Z0")
+
+    // do perimeter first
+    g.SetFeedrate(fr)
+    g.Cutby(Z(-depth))
+    g.Cutby(X(w))
+    g.Cutby(Y(l))
+    g.Cutby(X(-w))
+    g.Cutby(Y(-l))
+
+    // mill inside grid
+    inc := g.Tool_diameter * overlap
+    y := inc
+    dir := 1.0
+    for y <= l {
+    	g.Cutby(Y(inc))
+    	g.Cutby(X(w*dir))
+    	y += inc
+    	dir = -dir  // change direction
+    }
+
+    if y != l {
+      d := (y-l)
+      g.Cutby(Y(d))
+      g.Cutby(X(w*dir))
+    }
+
+    g.Moveto(Z(g.Safe_z))
+    g.outputnl("(-- Milltop --)")
+ 	return nil
+ }
+
+
 func Testit() {
     g := NewCam(os.Stdout)
 
@@ -505,6 +569,13 @@ func Testit() {
     g.Doc = 0.2
     args = map[string]float64 {"radius": 5.0, "depth": 2, "peck": 1, "feedrate": 1000.0}
     if err:= g.Hole(args); err != nil {
+        panic(err)
+    }
+
+    g.Moveto(XYZ(0, 0, 0))
+    g.Tool_diameter = 50
+    args = map[string]float64 {"width": 100.0, "length": 200, "depth": 1, "stepover": 50, "feedrate": 1000.0}
+    if err:= g.Milltop(args); err != nil {
         panic(err)
     }
 }

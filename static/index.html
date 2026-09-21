@@ -63,6 +63,7 @@ const SPECS = {
 
   hole: {
     title: "Drill Helical Hole",
+    blurb: "Stock and cutter values, drills a helical hole with an endmill to the given depth",
     fields: [
       { name: "jobname", label: "Job name", type: "text", value: "hole" },
       { name: "holedia", label: "Hole diameter", ...mm, value: 10, min: 0.001 },
@@ -87,6 +88,21 @@ const SPECS = {
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100,
         value: 70, unit: "%" },
       { name: "climb", label: "Climb milling", type: "check", value: true }
+    ]
+  }
+
+  milltop: {
+    title: "Mill a surface flat",
+    blurb: "Starts at current position and z height and mills over the given width, length to given depth"
+
+    fields: [
+      { name: "jobname", label: "Job name",      type: "text", value: "surface" },
+      { name: "width",   label: "Width",         ...mm, value: 200 },
+      { name: "length",  label: "Length",        ...mm, value: 300 },
+      { name: "depth",   label: "Depth",         ...mm, value: 1 },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
+      { name: "tooldia", label: "Tool diameter", ...mm, value: 50, min: 0.001 },
+      { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
     ]
   }
 };

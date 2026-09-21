@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-	//cams.Testit()
-    runServer()
+	cams.Testit()
+    //runServer()
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,8 +56,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
     case "circle":
         log.Println("We got a circle job", values)
     default:
-        log.Println("Unknown kind: ", kind)
-        fmt.Fprintf(w, "Unknown kind: ", kind)
+        log.Println("Unknown job: ", kind)
+        fmt.Fprintf(w, "Unknown job: ", kind)
         return
     }
 }
@@ -127,7 +127,7 @@ func runServer() {
     http.HandleFunc("/api/dialog-result", apiHandler)
     http.Handle("/", fileserver)
 
-    fmt.Printf("port running on http://localhost:8080/\n")
+    log.Printf("port running on http://localhost:8080/\n")
     if err := http.ListenAndServe(":8080", nil); err != nil{
         log.Fatal(err)
     }
