@@ -538,6 +538,130 @@ func (g *camvars) Hole(args map[string]float64) error {
  	return nil
  }
 
+/*
+	Side mill a specific edge
+	bottom edge, or top edge, or left edge, or right edge
+	can set climb or conventional milling, and uses relative moves from starting position
+	must also set tool diameter and doc
+*/
+func (g *camvars) Sidemill(edge string, conventional bool, args map[string]float64) error {
+    var l, fr float64
+    var ok bool
+    var depth float64
+
+    if l, ok = args["length"]; !ok {
+        return fmt.Errorf("length required")
+    }
+
+    if depth, ok = args["depth"]; !ok {
+        return fmt.Errorf("depth required")
+    }
+
+    if fr, ok = args["feedrate"]; !ok {
+        fr = g.Feedrate
+    }
+
+    var (
+    	axis string
+    	delta float64
+    	moveaxis string
+    	movedelta float64
+    	start string
+    )
+
+    switch edge {
+    case "bottom":
+    	axis = "Y"
+    	delta = +1
+    	moveaxis = "X"
+    	if conventional {
+    		movedelta = +1;
+    		start = "Left"
+    	} else {
+    		movedelta = -1
+	    	start = "Right"
+	    }
+    case "top":
+    	axis = "Y"
+    	delta = -1
+    	moveaxis = "X"
+    	if conventional {
+    		movedelta = -1;
+    		start = "Right"
+    	} else {
+    		movedelta = +1
+	    	start = "left"
+	    }
+
+    case "left":
+    	axis = "X"
+    	delta = +1
+    	moveaxis = "Y"
+    	if conventional {
+    		movedelta = -1;
+    		start = "Top"
+    	} else {
+    		movedelta = +1
+	    	start = "Bottom"
+	    }
+
+    case "right":
+    	axis = "X"
+    	delta = -1
+    	moveaxis = "Y"
+     	if conventional {
+    		movedelta = +1;
+    		start = "Bottom"
+    	} else {
+    		movedelta = -1
+	    	start = "Top"
+	    }
+
+    default:
+    	return fmt.Errorf("edge must be one of top, bottom, left, right")
+    }
+
+    t := "Conventional"
+    if !conventional {
+    	t = "Climb"
+    }
+
+    g.outputnl(fmt.Sprintf("(Sidemill %.4f mm along %v edge to depth of %.4f mm, %v)", l, edge, -depth, t))
+	g.outputnl(fmt.Sprintf("(MSG Move cutter to touch the %v edge and move to %v corner, and move to the required height)", edge, start))
+
+	retract := 1.0
+	doc := g.Doc
+	extra := g.Tool_diameter
+	d := depth
+
+	g.SetFeedrate(fr)
+	g.Relative()
+
+	for d > 0 {
+		d -= g.Doc
+		if d < 0 {
+			doc = (d + g.Doc)
+			d = 0
+		}
+		retract += doc
+
+		// move depth of cut
+		g.outputnl(fmt.Sprintf("G1 %v%.4f", axis, doc*delta))
+		// skim edge
+		g.outputnl(fmt.Sprintf("G1 %v%.4f", moveaxis, (l+extra) * movedelta))
+		// move off edge
+		g.outputnl(fmt.Sprintf("G0 %v%.4f", axis,  retract * -delta))
+		// move back to start point
+		g.outputnl(fmt.Sprintf("G0 %v%.4f", moveaxis, (l+extra) * -movedelta))
+		// move back to edge
+		g.outputnl(fmt.Sprintf("G0 %v%.4f", axis,retract * delta))
+	}
+
+	g.Absolute()
+	g.outputnl("(-- Sidemill --)")
+	return nil
+}
+
 
 func Testit() {
     g := NewCam(os.Stdout)
@@ -578,4 +702,14 @@ func Testit() {
     if err:= g.Milltop(args); err != nil {
         panic(err)
     }
+
+    g.Moveto(XYZ(0, 0, 0))
+    g.Tool_diameter = 12
+    g.Doc = 0.2
+    args = map[string]float64 {"length": 200, "depth": 0.5, "feedrate": 1000.0}
+    if err:= g.Sidemill("bottom", false, args); err != nil {
+        panic(err)
+    }
+
+
 }
