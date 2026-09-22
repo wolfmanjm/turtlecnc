@@ -70,7 +70,7 @@ func YZ(y, z float64) Coord {
 // output to specified port
 func (g camvars) output(s ...string) {
     for _, o := range s {
-        fmt.Fprintf(g.output_port, o)
+        fmt.Fprint(g.output_port, o)
     }
 }
 
@@ -149,7 +149,7 @@ func _expand(w, l, d float64) (float64, float64, float64, float64) {
 // profiles a rectangle of given size, inside or outside to the given depth using the depth of cut
 func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
     // cuts a rectangle conventional milling, ramps to depth in the first X line, but recuts to final depth as last operation
-    var w, l, fr float64
+    var w, l float64
     var ok bool
     var doc = g.Doc
 
@@ -163,10 +163,7 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
         return fmt.Errorf("length required")
     }
 
-    fr, ok = args["feedrate"]
-    if !ok || fr == 0 {
-        fr = g.Feedrate
-    }
+    fr := g.Feedrate
 
     if g.Laser {
         g.outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, for Laser)", w, l))
@@ -273,7 +270,7 @@ func _circle(radius float64, segments int) []point {
 
 // Profiles a circle of given radius, inside or outside
 func (g *camvars) Circle(inside bool, args map[string]float64) error {
-    var radius, fr float64
+    var radius float64
     var ok bool
     var segments int
     var doc = g.Doc
@@ -291,9 +288,7 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
         segments = int(math.Round(radius*2 * math.Pi / 0.5))
     }
 
-    if fr, ok = args["feedrate"]; !ok || fr == 0 {
-        fr = g.Feedrate
-    }
+    fr := g.Feedrate
 
     if g.Laser {
         g.outputnl(fmt.Sprintf("(Circle: radius %.4f mm, segments %v for laser)", radius, segments))
@@ -382,7 +377,7 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
 }
 
 func (g *camvars) Hole(args map[string]float64) error {
-    var radius, fr float64
+    var radius float64
     var ok bool
     var doc = g.Doc
 
@@ -401,9 +396,7 @@ func (g *camvars) Hole(args map[string]float64) error {
     	return fmt.Errorf("Depth of cut must be > 0")
     }
 
-    if fr, ok = args["feedrate"]; !ok || fr == 0 {
-        fr = g.Feedrate
-    }
+    fr := g.Feedrate
 
     var peck float64
     var off, depth float64
@@ -492,36 +485,23 @@ func (g *camvars) Hole(args map[string]float64) error {
     return nil
 }
 
- func (g *camvars) Milltop(args map[string]float64) error {
-    var w, l, fr float64
-    var ok bool
-    var depth float64
-    var overlap float64
-
-    if w, ok = args["width"]; !ok || w == 0 {
-        return fmt.Errorf("width required")
-    }
-
-    if l, ok = args["length"]; !ok || l == 0 {
-        return fmt.Errorf("length required")
-    }
-
-    if depth, ok = args["depth"]; !ok || depth == 0 {
-        return fmt.Errorf("depth required")
-    }
-
-    if overlap, ok = args["stepover"]; ok && overlap > 0 {
-    	overlap = (100.0-overlap)/100.0
+ func (g *camvars) Milltop(w, l, depth, stepover float64) error {
+ 	var overlap float64
+    if stepover > 0 {
+    	overlap = (100.0-stepover)/100.0
     } else {
     	overlap = 0.4
     }
 
-    if fr, ok = args["feedrate"]; !ok || fr == 0 {
-        fr = g.Feedrate
-    }
+    fr := g.Feedrate
 
     g.outputnl(fmt.Sprintf("(Milltop %.4fx%.4f mm, depth: %.4f mm, tool: %.4f, stepover: %.2f)", w, l, -depth, g.Tool_diameter, overlap))
 	g.outputnl("(MSG Position tool at front left of surface just touching it, set Z0")
+
+	if g.RPM > 0.001 {
+ 		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
+ 		g.outputnl("G4 S3")
+ 	}
 
     // do perimeter first
     g.SetFeedrate(fr)
@@ -549,6 +529,10 @@ func (g *camvars) Hole(args map[string]float64) error {
     }
 
     g.Moveto(Z(g.Safe_z))
+   	if g.RPM > 0.001 {
+   		g.outputnl("M5")
+   	}
+
     g.outputnl("(-- Milltop --)")
  	return nil
  }
@@ -559,22 +543,12 @@ func (g *camvars) Hole(args map[string]float64) error {
 	can set climb or conventional milling, and uses relative moves from starting position
 	must also set tool diameter and doc
 */
-func (g *camvars) Sidemill(edge string, conventional bool, args map[string]float64) error {
-    var l, fr float64
-    var ok bool
-    var depth float64
-
-    if l, ok = args["length"]; !ok || l == 0 {
-        return fmt.Errorf("length required")
+func (g *camvars) Sidemill(edge string, conventional bool, l, depth float64) error {
+    if l == 0 || depth == 0 {
+        return fmt.Errorf("length and depth required")
     }
 
-    if depth, ok = args["depth"]; !ok || depth == 0 {
-        return fmt.Errorf("depth required")
-    }
-
-    if fr, ok = args["feedrate"]; !ok || fr == 0 {
-        fr = g.Feedrate
-    }
+    fr := g.Feedrate
 
     var (
     	axis string
@@ -649,6 +623,11 @@ func (g *camvars) Sidemill(edge string, conventional bool, args map[string]float
     g.outputnl(fmt.Sprintf("(Sidemill %.4f mm along %v edge to depth of %.4f mm, %v)", l, edge, -depth, t))
 	g.outputnl(fmt.Sprintf("(MSG Move cutter to touch the %v edge and move to %v corner, and move to the required height)", edge, start))
 
+	if g.RPM > 0.001 {
+ 		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
+ 		g.outputnl("G4 S3")
+ 	}
+
 	retract := 1.0
 	extra := g.Tool_diameter
 	d := depth
@@ -676,11 +655,133 @@ func (g *camvars) Sidemill(edge string, conventional bool, args map[string]float
 		g.outputnl(fmt.Sprintf("G0 %v%.4f", axis,retract * delta))
 	}
 
+   	if g.RPM > 0.001 {
+ 		g.outputnl("M5")
+ 	}
+
 	g.Absolute()
 	g.outputnl("(-- Sidemill --)")
 	return nil
 }
 
+/*
+  This is used for squaring stock on the mill. as per Joe Pie on Youtube...
+  It uses a clockwise path (climb milling) and goes around the stock and mills in the usual pattern (around clockwise).
+  The origin should be set at front left of actual stock, and width height is set to actual size of stock
+  however the milling bit will move to the left and right of the stock to move between top and bottom raster
+  if final_depth is set it will continue to take doc off until it reaches that depth.
+  If height is set then it will side mill around the perimeter at the height given using width of cut the same as doc
+*/
+func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
+
+   	if w == 0 || l == 0  {
+        return fmt.Errorf("width, length required")
+    }
+
+    var overlap float64
+    if stepover > 0 {
+    	overlap = (100.0-stepover)/100.0
+    } else {
+    	overlap = 0.4
+    }
+
+    fr := g.Feedrate
+    doc := g.Doc
+    z := -doc
+
+	g.outputnl(fmt.Sprintf("(Squaring: %.4fx%.4f mm, doc: %.4f mm, to final depth: %.4f)", w, l, doc, depth))
+	if height > 0 {
+		g.outputnl(fmt.Sprintf("(Sidemill at depth: %.4f mm with doc: %.4f mm)", height, doc))
+	}
+	g.outputnl("(MSG touch off at the bottom left corner and set XY to zero)")
+
+    // set the Y increment on each pass based on tool size and overlap set
+    inc := g.Tool_diameter * overlap
+    // set the start x and end x such that the tool clears the stock before it moves up and down
+    xs := -g.Tool_diameter // only needs to be half but make sure we totally are clear of stock
+    xe := w + g.Tool_diameter
+    y1 := l + g.Tool_diameter/2.0 - inc  // initial engage at top is overlap
+    y2 := -g.Tool_diameter/2.0 + inc       // initial engage at bottom is overlap
+
+    g.Moveto(Z(g.Safe_z))
+    // move to required starting position
+    g.Moveto(XY(xs, y1))
+    // move to first cutting depth
+    g.SetFeedrate(fr) // maybe should be plunge feed rate
+    g.Cutto(Z(-doc))
+
+    g.outputnl("(first top skim pass)")
+    for {
+    	for {
+	        // mill top raster
+        	g.Cutto(X(xe))
+	        // move to bottom raster
+        	g.Moveto(Y(y2))
+        	// mill bottom raster
+        	g.Cutto(X(xs))
+
+	        // calculate next raster
+	        y1 -= inc
+	        y2 += inc
+
+	        if y1 <= y2 { break }
+            // move to next top raster
+        	g.Moveto(Y(y1))
+    	}
+
+    	// if we have no final depth we are done
+	    if depth == 0 { break }
+      	if z <= -depth { break }
+
+		// start again at new depth until we reach final
+		y1 = l + g.Tool_diameter/2.0 - inc  // initial engage at top is overlap
+		y2 = -g.Tool_diameter/2.0 + inc     // initial engage at bottom is overlap
+
+	    // move to required starting position
+	    g.Moveto(Y(y1))
+
+        // move to new cutting depth
+    	z -= doc
+      	if z < -depth {
+        	z = -depth
+      	}
+    	g.outputnl(fmt.Sprintf("(skim pass at %.4f)", z))
+      	g.Moveto(Z(z))
+    }
+
+   	// See if we need to sidemill the edges as per Joe Pie
+    // it tries to take up backlash presuming home has been set in +X +Y direction
+    if height > 0 {
+    	// should woc be a separate parameter?
+    	smwoc := (-g.Tool_diameter/2.0) + doc
+    	g.outputnl("(skim edges)")
+    	g.Moveto(Z(g.Safe_z))
+	    // move to a position to take up backlash
+		g.Moveto(XY(-g.Tool_diameter, -g.Tool_diameter))
+	    // move to required cutting depth
+	    g.Cutto(Z(-height))
+   	  	g.Cutto(X(smwoc))
+
+   	  	// skim left edge
+   	  	g.Cutto(Y(l-smwoc))
+    	// skim top edge
+   	  	g.Cutto(X(w-smwoc))
+    	// skim right edge all the way down past end (FIXME this may not work as right edge seems to be missed)
+   	  	g.Cutto(Y(-g.Tool_diameter))
+    	// skim bottom edge move back to it to take up backlash
+   	  	g.Cutto(Y(smwoc))
+
+   	  	g.Cutto(X(-g.Tool_diameter))
+   	  	// leave to the left and bottom
+	    g.Moveto(XY(-g.Tool_diameter, -g.Tool_diameter))
+    }
+
+    g.Moveto(Z(g.Safe_z))
+	g.Absolute()
+
+	g.outputnl("(-- Squaring --)")
+	return nil
+}
 
 func Testit() {
     g := NewCam(os.Stdout)
@@ -717,16 +818,14 @@ func Testit() {
 
     g.Moveto(XYZ(0, 0, 0))
     g.Tool_diameter = 50
-    args = map[string]float64 {"width": 100.0, "length": 200, "depth": 1, "stepover": 50, "feedrate": 1000.0}
-    if err:= g.Milltop(args); err != nil {
+    if err:= g.Milltop(100, 200, 1, 50); err != nil {
         panic(err)
     }
 
     g.Moveto(XYZ(0, 0, 0))
     g.Tool_diameter = 12
     g.Doc = 0.2
-    args = map[string]float64 {"length": 200, "depth": 0.5, "feedrate": 1000.0}
-    if err:= g.Sidemill("bottom", false, args); err != nil {
+    if err:= g.Sidemill("bottom", false, 200, 0.5); err != nil {
         panic(err)
     }
 

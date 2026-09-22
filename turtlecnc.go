@@ -23,12 +23,14 @@ type values struct {
     Width float64
     Diameter float64
     Depth float64
+    Height float64
+    Doc float64
     RPM float64
     Side string
     Tooldia float64
-    Doc float64
     Peck float64
     Feedrate float64
+    Stepover float64
     Laser bool
     Conventional bool
 }
@@ -64,11 +66,14 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
     case "sidemill":
         log.Println(fmt.Sprintf("We got a sidemill job: %+v", v))
         sidemillJob(w, v)
+    case "squaring":
+        log.Println(fmt.Sprintf("We got a squaring job: %+v", v))
+        squaringJob(w, v)
     case "circle":
         log.Println(fmt.Sprintf("We got a circle job: %+v", v))
     default:
         log.Println(fmt.Sprintf("Unknown job: %v, %+v", kind, v))
-        fmt.Fprintf(w, fmt.Sprintf("Unknown job: %v", kind))
+        fmt.Fprint(w, fmt.Sprintf("Unknown job: %v", kind))
         return
     }
 }
@@ -104,7 +109,7 @@ func rectangleJob(w io.Writer, v values) {
     }
 
      if err := g.Rectangle(inside, args); err != nil {
-        fmt.Fprintf(w, "Rectangle() failed: %w", err.Error())
+        fmt.Fprintf(w, "Rectangle() failed: %s", err.Error())
     }
 }
 
@@ -120,10 +125,11 @@ func holeJob(w io.Writer, v values) {
         g.RPM = v.RPM
     }
 
+    g.Feedrate = v.Feedrate
+
     var args = map[string]float64 {
         "diameter": v.Diameter,
         "depth": v.Depth,
-        "feedrate": v.Feedrate,
         "peck": v.Peck,
     }
 
@@ -133,21 +139,29 @@ func holeJob(w io.Writer, v values) {
 }
 
 func sidemillJob(w io.Writer, v values) {
-// {Kind:sidemill Jobname:surface Length:300 Width:0 Diameter:0 Depth:1 RPM:0 Side: Tooldia:12 Doc:0 Peck:0 Feedrate:1400 Laser:false}
+    // {Kind:sidemill Jobname:surface Length:300 Width:0 Diameter:0 Depth:1 RPM:0 Side: Tooldia:12 Doc:0.5 Peck:0 Feedrate:1400 Laser:false}
     g := cams.NewCam(w)
 
     g.Tool_diameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
+    g.Feedrate = v.Feedrate
 
-    var args = map[string]float64 {
-        "length": v.Length,
-        "depth": v.Depth,
-        "feedrate": v.Feedrate,
+    if err := g.Sidemill(v.Side, v.Conventional, v.Length, v.Depth); err != nil {
+        fmt.Fprintf(w, "Sidemill() failed: %s", err.Error())
     }
+}
 
-     if err := g.Sidemill(v.Side, v.Conventional, args); err != nil {
-        fmt.Fprintf(w, "Sidemill() failed: %w", err.Error())
+func squaringJob(w http.ResponseWriter, v values) {
+    g := cams.NewCam(w)
+
+    g.Tool_diameter = v.Tooldia
+    g.Doc = v.Doc
+    g.RPM = v.RPM
+    g.Feedrate = v.Feedrate
+
+    if err := g.Squaring(v.Width, v.Length, v.Height, v.Depth, v.Stepover); err != nil {
+        fmt.Fprintf(w, "Squaring() failed: %s", err.Error())
     }
 }
 
