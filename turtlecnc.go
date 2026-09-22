@@ -2,17 +2,28 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 
-    cams "github.com/wolfmanjm/turtlecnc/internal"
+	cams "github.com/wolfmanjm/turtlecnc/internal"
 )
 
 func main() {
-	//cams.Testit()
-    runServer()
+    // get flags
+    debug := flag.Bool("d", false, "debug test")
+    server := flag.Bool("s", false, "start server")
+    flag.Parse()
+
+    if *debug {
+	   cams.Testit()
+    } else if *server {
+        runServer()
+    } else {
+        flag.PrintDefaults()
+    }
 }
 
 // a structure containing all possible values from the request

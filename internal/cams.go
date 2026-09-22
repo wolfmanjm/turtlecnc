@@ -829,5 +829,10 @@ func Testit() {
         panic(err)
     }
 
-
+    g.Moveto(XYZ(0, 0, 0))
+    g.Tool_diameter = 12
+    g.Doc = 0.2
+    if err:= g.Squaring(100, 100, 10, 1, 40); err != nil {
+        panic(err)
+    }
 }
