@@ -102,13 +102,13 @@ func (g camvars) move(gc string, coords Coord) {
 
 	g.output(gc, " ")
     if !math.IsNaN(coords.X)  {
-		g.output(fmt.Sprintf("X%.4f ", coords.X))
+		g.output(fmt.Sprintf("X%.4f", coords.X))
 	}
     if !math.IsNaN(coords.Y)  {
-        g.output(fmt.Sprintf("Y%.4f ", coords.Y))
+        g.output(fmt.Sprintf("Y%.4f", coords.Y))
     }
     if !math.IsNaN(coords.Z)  {
-        g.output(fmt.Sprintf("Z%.4f ", coords.Z))
+        g.output(fmt.Sprintf("Z%.4f", coords.Z))
     }
 	g.outputnl()
 }
@@ -704,6 +704,12 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
     y2 := -g.Tool_diameter/2.0 + inc       // initial engage at bottom is overlap
 
     g.Moveto(Z(g.Safe_z))
+
+ 	if g.RPM > 0.001 {
+ 		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
+ 		g.outputnl("G4 S3")
+ 	}
+
     // move to required starting position
     g.Moveto(XY(xs, y1))
     // move to first cutting depth
@@ -764,9 +770,9 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
 
    	  	// skim left edge
    	  	g.Cutto(Y(l-smwoc))
-    	// skim top edge
+    	// skim top edge to left edge
    	  	g.Cutto(X(w-smwoc))
-    	// skim right edge all the way down past end (FIXME this may not work as right edge seems to be missed)
+    	// skim right edge all the way down past end
    	  	g.Cutto(Y(-g.Tool_diameter))
     	// skim bottom edge move back to it to take up backlash
    	  	g.Cutto(Y(smwoc))
@@ -777,10 +783,20 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
     }
 
     g.Moveto(Z(g.Safe_z))
+   	if g.RPM > 0.001 {
+ 		g.outputnl("M5")
+ 	}
 	g.Absolute()
 
 	g.outputnl("(-- Squaring --)")
 	return nil
+}
+
+func (g *camvars) Preamble() {
+	g.outputnl("(Begin preamble)")
+	g.outputnl("G17 G90")
+	g.outputnl("G21")
+	g.abs_state = true
 }
 
 func Testit() {

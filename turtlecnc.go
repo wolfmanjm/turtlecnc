@@ -94,6 +94,7 @@ func rectangleJob(w io.Writer, v values) {
     g := cams.NewCam(w)
 
     g.Laser = false
+    g.Preamble()
 
     inside := true
     switch v.Side {
@@ -129,6 +130,7 @@ func holeJob(w io.Writer, v values) {
     g := cams.NewCam(w)
 
     g.Laser = v.Laser
+    g.Preamble()
 
     if !g.Laser {
         g.Tool_diameter = v.Tooldia
@@ -152,6 +154,7 @@ func holeJob(w io.Writer, v values) {
 func sidemillJob(w io.Writer, v values) {
     // {Kind:sidemill Jobname:surface Length:300 Width:0 Diameter:0 Depth:1 RPM:0 Side: Tooldia:12 Doc:0.5 Peck:0 Feedrate:1400 Laser:false}
     g := cams.NewCam(w)
+    g.Preamble()
 
     g.Tool_diameter = v.Tooldia
     g.Doc = v.Doc
@@ -165,6 +168,7 @@ func sidemillJob(w io.Writer, v values) {
 
 func squaringJob(w http.ResponseWriter, v values) {
     g := cams.NewCam(w)
+    g.Preamble()
 
     g.Tool_diameter = v.Tooldia
     g.Doc = v.Doc
