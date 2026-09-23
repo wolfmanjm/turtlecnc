@@ -57,8 +57,8 @@ type testfixture1 struct {
 	settings string
 }
 
-func validate(t *testing.T, tt testfixture1, b strings.Builder) {
-	data, err := os.ReadFile("./testdata/" + tt.resultfile)
+func validate(t *testing.T, resultfile string, result string) {
+	data, err := os.ReadFile("./testdata/" + resultfile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,9 +66,9 @@ func validate(t *testing.T, tt testfixture1, b strings.Builder) {
 	// Split the file content into lines
 	test_lines := strings.Split(string(data), "\n")
 	// Split the result content into lines
-	result_lines := strings.Split(b.String(), "\n")
+	result_lines := strings.Split(result, "\n")
 
-	// Test each line
+	// Test each line, trim white space at end of line
 	for i, line := range test_lines {
 		if strings.TrimRight(line, "\n ") != strings.TrimRight(result_lines[i], "\n ") {
 			t.Errorf("Did not get Expected result at line %d:\nexpected:\n<%v>\ngot:\n<%v>", i+1, line, result_lines[i])
@@ -106,8 +106,8 @@ func TestRectangle(t *testing.T) {
 	       	t.Errorf("got Error %v, want %v", err, nil)
 	       	t.FailNow()
 	    }
-	    // test results
-	    validate(t, tt, b)
+	    // validate results
+	    validate(t, tt.resultfile, b.String())
 	}
 
     for _, tt := range tests {

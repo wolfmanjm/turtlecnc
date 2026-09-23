@@ -13,14 +13,16 @@ import (
 
 func main() {
     // get flags
-    debug := flag.Bool("d", false, "debug test")
+    debug := flag.Bool("t", false, "debug test")
     server := flag.Bool("s", false, "start server")
+    port := flag.Int("port", 8080, "Set server listen port")
+
     flag.Parse()
 
     if *debug {
 	   cams.Testit()
     } else if *server {
-        runServer()
+        runServer(*port)
     } else {
         flag.PrintDefaults()
     }
@@ -180,14 +182,15 @@ func squaringJob(w http.ResponseWriter, v values) {
     }
 }
 
-func runServer() {
+func runServer(port int) {
     fileserver := http.FileServer(http.Dir("./static"))
 
     http.HandleFunc("/api/dialog-result", apiHandler)
     http.Handle("/", fileserver)
 
-    log.Printf("port running on http://localhost:8080/\n")
-    if err := http.ListenAndServe(":8080", nil); err != nil{
+    p := fmt.Sprintf(":%d", port)
+    log.Printf("port running on http://localhost:%d/\n", port)
+    if err := http.ListenAndServe(p, nil); err != nil{
         log.Fatal(err)
     }
 }
