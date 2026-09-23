@@ -86,6 +86,10 @@ func TestRectangle(t *testing.T) {
     	{	"rectangle_laser", "rectangle2.txt", false,
     		map[string]float64{"width": 100.0, "length": 150.0, "feedrate": 1234.0},
     		`{"laser":true}` },
+
+	   	{	"rectangle_inside", "rectangle3.txt", true,
+	    		map[string]float64{"width": 100.0, "length": 100.0, "depth": 1.0},
+	    		`{"tool_diameter":6.35,"doc":0.2}` },
 	}
 
 	// test function
