@@ -102,13 +102,13 @@ func (g camvars) move(gc string, coords Coord) {
 
 	g.output(gc, " ")
     if !math.IsNaN(coords.X)  {
-		g.output(fmt.Sprintf("X%.4f", coords.X))
+		g.output(fmt.Sprintf("X%.4f ", coords.X))
 	}
     if !math.IsNaN(coords.Y)  {
-        g.output(fmt.Sprintf("Y%.4f", coords.Y))
+        g.output(fmt.Sprintf("Y%.4f ", coords.Y))
     }
     if !math.IsNaN(coords.Z)  {
-        g.output(fmt.Sprintf("Z%.4f", coords.Z))
+        g.output(fmt.Sprintf("Z%.4f ", coords.Z))
     }
 	g.outputnl()
 }
@@ -812,6 +812,12 @@ func Testit() {
     g.Tool_diameter = 4
     g.Doc = 1
     var args = map[string]float64 {"width": 12.0, "length": 3.4, "depth": 2, "feedrate": 1000.0}
+    if err:= g.Rectangle(false, args); err != nil {
+        panic(err)
+    }
+
+    g.Laser = true
+    args = map[string]float64 {"width": 100.0, "length": 150, "feedrate": 1234.0}
     if err:= g.Rectangle(false, args); err != nil {
         panic(err)
     }

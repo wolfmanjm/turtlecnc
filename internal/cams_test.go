@@ -1,7 +1,10 @@
 package cams
 
 import (
+	"encoding/json"
+	"log"
 	"math"
+	"os"
 	"strings"
 	"testing"
 )
@@ -38,44 +41,75 @@ func TestBasic(t *testing.T) {
     }
 }
 
+// merge the camvars structure with the json supplied
+func merge(s1 *camvars, s2 string) {
+	err := json.NewDecoder(strings.NewReader(s2)).Decode(s1)
+	if err != nil {
+	    panic(err)
+	}
+}
+
+type testfixture1 struct {
+	name string
+	resultfile string
+	inside bool
+	args map[string]float64
+	settings string
+}
+
+func validate(t *testing.T, tt testfixture1, b strings.Builder) {
+	data, err := os.ReadFile("./testdata/" + tt.resultfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Split the file content into lines
+	test_lines := strings.Split(string(data), "\n")
+	// Split the result content into lines
+	result_lines := strings.Split(b.String(), "\n")
+
+	// Test each line
+	for i, line := range test_lines {
+		if strings.TrimRight(line, "\n ") != strings.TrimRight(result_lines[i], "\n ") {
+			t.Errorf("Did not get Expected result at line %d:\nexpected:\n<%v>\ngot:\n<%v>", i+1, line, result_lines[i])
+			t.FailNow()
+		}
+	}
+}
+
 func TestRectangle(t *testing.T) {
-	var b strings.Builder
-    g := NewCam(&b)
+    tests := []testfixture1 {
+    	{	"rectangle_mill", "rectangle1.txt", false,
+    		map[string]float64{"width": 12.0, "length": 3.4, "depth": 2, "feedrate": 1000.0},
+    		`{"laser":false,"tool_diameter":4.0,"doc":1.0}` },
 
-    g.Laser = false
-    g.Tool_diameter = 4
-    g.Doc = 1
-    var args = map[string]float64 {"width": 12.0, "length": 3.4, "depth": 2, "feedrate": 1000.0}
-    err := g.Rectangle(false, args)
-    if err != nil {
-       	t.Errorf("got Error %v, want %v", err, nil)
-       	t.FailNow()
+    	{	"rectangle_laser", "rectangle2.txt", false,
+    		map[string]float64{"width": 100.0, "length": 150.0, "feedrate": 1234.0},
+    		`{"laser":true}` },
+	}
+
+	// test function
+	f := func(t *testing.T, tt testfixture1) {
+		// captures result
+		var b strings.Builder
+		// create context
+    	g := NewCam(&b)
+    	// merge in overides
+    	merge(g, tt.settings)
+    	// call cam
+	    err := g.Rectangle(tt.inside, tt.args)
+	    if err != nil {
+	       	t.Errorf("got Error %v, want %v", err, nil)
+	       	t.FailNow()
+	    }
+	    // test results
+	    validate(t, tt, b)
+	}
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+        	f(t, tt)
+        })
     }
-
-result :=
-`(Rectangle: 12.0000x3.4000 mm, inside: false, depth: 2.0000 mm, doc: 1.0000, tool: 4.0000)
-G91
-G0 X-2.0000Y-2.0000
-G1 F1800.0
-G90
-G1 Z0.0000
-G91
-G1 X16.0000Z-1.0000
-G1 Y7.4000
-G1 X-16.0000
-G1 Y-7.4000
-G1 X16.0000Z-1.0000
-G1 Y7.4000
-G1 X-16.0000
-G1 Y-7.4000
-G1 X16.0000
-G90
-G0 Z20.0000
-G91
-G0 X-16.0000
-G90
-(-- Rectangle --)
-`
-	if b.String() != result { t.Errorf("Did not get Expected result:\n<%v>\ngot:\n<%v>", result, b.String()) }
 
 }
