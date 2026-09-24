@@ -142,13 +142,7 @@ func holeJob(w io.Writer, v values) {
 
     g.Feedrate = v.Feedrate
 
-    var args = map[string]float64 {
-        "diameter": v.Diameter,
-        "depth": v.Depth,
-        "peck": v.Peck,
-    }
-
-     if err := g.Hole(args); err != nil {
+    if err := g.Hole(v.Diameter, v.Depth, v.Peck); err != nil {
         fmt.Fprintf(w, "Hole() failed: %v", err.Error())
     }
 }

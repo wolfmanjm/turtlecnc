@@ -68,12 +68,23 @@ func validate(t *testing.T, resultfile string, result string) {
 	// Split the result content into lines
 	result_lines := strings.Split(result, "\n")
 
+	tstlen := len(test_lines)
+	resultlen := len(result_lines)
+
 	// Test each line, trim white space at end of line
 	for i, line := range test_lines {
+		if i >= resultlen {
+			t.Errorf("result did not have enough data for line %d:\n%v", i+1, line)
+			t.FailNow()
+		}
 		if strings.TrimRight(line, "\n ") != strings.TrimRight(result_lines[i], "\n ") {
 			t.Errorf("Did not get Expected result at line %d:\nexpected:\n<%v>\ngot:\n<%v>", i+1, line, result_lines[i])
 			t.FailNow()
 		}
+	}
+	if tstlen != resultlen {
+		t.Errorf("test and result data had different line lengths %d vs %d", len(test_lines), len(result_lines))
+		t.FailNow()
 	}
 }
 
@@ -116,4 +127,42 @@ func TestRectangle(t *testing.T) {
         })
     }
 
+}
+
+func TestHole(t *testing.T) {
+   tests := []testfixture1 {
+    	{	"hole_peck", "hole1.txt", false,
+    		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 1.0},
+    		`{"tool_diameter":4.0,"doc":0.2}` },
+    	{	"hole_nopeck", "hole2.txt", false,
+    		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 0.0},
+    		`{"tool_diameter":4.0,"doc":0.2}` },
+    	{	"hole_laser", "hole3.txt", false,
+    		map[string]float64{"diameter": 10.0, "depth": 0, "peck": 0.0},
+    		`{"laser":true}` },
+	}
+
+	// test function
+	f := func(t *testing.T, tt testfixture1) {
+		// captures result
+		var b strings.Builder
+		// create context
+    	g := NewCam(&b)
+    	// merge in overides
+    	merge(g, tt.settings)
+    	// call cam
+	    err := g.Hole(tt.args["diameter"], tt.args["depth"], tt.args["peck"])
+	    if err != nil {
+	       	t.Errorf("got Error %v, want %v", err, nil)
+	       	t.FailNow()
+	    }
+	    // validate results
+	    validate(t, tt.resultfile, b.String())
+	}
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+        	f(t, tt)
+        })
+    }
 }

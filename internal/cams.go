@@ -13,7 +13,6 @@ type camvars struct {
 	Doc           float64
 	Feedrate      float64
 	Plunge_rate   float64
-	default_depth float64
 	RPM 		  float64
 	Laser         bool
 	Lathe         bool
@@ -33,7 +32,6 @@ func NewCam(out io.Writer) *camvars {
     g.Tool_diameter = 3.175
     g.Doc = 0.2
     g.RPM = 0
-    g.default_depth = 6.35
 	g.abs_state = true
 	g.output_port = out
 
@@ -180,10 +178,11 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
     		return fmt.Errorf("Depth of cut must be > 0")
     	}
 
-        depth := -g.default_depth
-        if i, ok := args["depth"]; ok {
-            depth = -i
+    	var depth float64
+        if depth, ok = args["depth"]; !ok {
+            return fmt.Errorf("depth required")
         }
+        depth = -depth
 
         g.outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", w, l, inside, -depth, doc, g.Tool_diameter))
 
@@ -313,10 +312,11 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
     		return fmt.Errorf("Depth of cut must be > 0")
     	}
 
-        depth := -g.default_depth
-        if i, ok := args["depth"]; ok {
-            depth = -i
+    	var depth float64
+        if depth, ok = args["depth"]; !ok {
+            return fmt.Errorf("depth required")
         }
+        depth = -depth
 
         g.outputnl(fmt.Sprintf("(Circle: radius %.4f mm, segments %v, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", radius, segments, inside, -depth, doc, g.Tool_diameter))
 
@@ -376,17 +376,15 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
     return nil
 }
 
-func (g *camvars) Hole(args map[string]float64) error {
+func (g *camvars) Hole(diameter, depth, peck float64) error {
     var radius float64
-    var ok bool
     var doc = g.Doc
 
-    if radius, ok = args["radius"]; !ok || radius == 0 {
-        if radius, ok = args["diameter"]; !ok || radius == 0 {
-            return fmt.Errorf("radius or diameter required")
-        }
-        radius = radius / 2
+    if diameter == 0 {
+        return fmt.Errorf("diameter required")
     }
+    radius = diameter / 2
+
 
     if !g.Laser && radius*2.0 <= g.Tool_diameter {
         return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.Tool_diameter)
@@ -398,22 +396,21 @@ func (g *camvars) Hole(args map[string]float64) error {
 
     fr := g.Feedrate
 
-    var peck float64
-    var off, depth float64
+    var off float64
     if g.Laser {
         off = radius
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm for laser)", radius*2))
 
     } else {
         off = (radius - g.Tool_diameter/2.0) // offset due to tool diameter
-        depth = -g.default_depth
-        if i, ok := args["depth"]; ok {
-            depth = -i
+        if depth == 0 {
+        	return fmt.Errorf("Depth ids required")
         }
+        depth = -depth
+
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm, depth: %.4f, doc: %.4f)", radius*2, -depth, doc))
 
-	    if peck, ok = args["peck"]; !ok {
-	        peck = 0
+	    if peck == 0 {
 	        if radius*2.0 <= g.Tool_diameter+2 {
 	            fmt.Println("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
 	        }
@@ -432,7 +429,8 @@ func (g *camvars) Hole(args map[string]float64) error {
     g.Absolute()
 
     if g.Laser {
-        g.outputnl(fmt.Sprintf("G2 J0 I%.4f F%.1f", -off, fr))
+        g.SetFeedrate(fr)
+        g.outputnl(fmt.Sprintf("G2 J0 I%.4f", -off))
 
      } else {
         g.Moveto(Z(0))
@@ -833,8 +831,7 @@ func Testit() {
     g.Moveto(Z(0))
     g.Laser = false
     g.Doc = 0.2
-    args = map[string]float64 {"radius": 5.0, "depth": 2, "peck": 1, "feedrate": 1000.0}
-    if err:= g.Hole(args); err != nil {
+    if err:= g.Hole(10.0, 2, 1); err != nil {
         panic(err)
     }
 
