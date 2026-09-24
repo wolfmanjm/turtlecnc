@@ -385,15 +385,6 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
     }
     radius = diameter / 2
 
-
-    if !g.Laser && radius*2.0 <= g.Tool_diameter {
-        return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.Tool_diameter)
-    }
-
-    if doc <= 0 {
-    	return fmt.Errorf("Depth of cut must be > 0")
-    }
-
     fr := g.Feedrate
 
     var off float64
@@ -402,9 +393,17 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm for laser)", radius*2))
 
     } else {
+	    if radius*2.0 <= g.Tool_diameter {
+	        return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.Tool_diameter)
+	    }
+
+	    if doc <= 0 {
+	    	return fmt.Errorf("Depth of cut must be > 0")
+	    }
+
         off = (radius - g.Tool_diameter/2.0) // offset due to tool diameter
         if depth == 0 {
-        	return fmt.Errorf("Depth ids required")
+        	return fmt.Errorf("Depth required")
         }
         depth = -depth
 
