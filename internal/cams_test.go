@@ -49,12 +49,16 @@ func merge(s1 *camvars, s2 string) {
 	}
 }
 
-type testfixture1 struct {
+type testfixturecommon struct {
 	name string
 	resultfile string
-	inside bool
 	args map[string]float64
 	settings string
+}
+
+type testfixture1 struct {
+	testfixturecommon
+	inside bool
 }
 
 func validate(t *testing.T, resultfile string, result string) {
@@ -90,17 +94,20 @@ func validate(t *testing.T, resultfile string, result string) {
 
 func TestRectangle(t *testing.T) {
     tests := []testfixture1 {
-    	{	"rectangle_mill", "rectangle1.txt", false,
+    	{	testfixturecommon{"rectangle_mill", "rectangle1.txt",
     		map[string]float64{"width": 12.0, "length": 3.4, "depth": 2, "feedrate": 1000.0},
     		`{"laser":false,"tool_diameter":4.0,"doc":1.0}` },
+    		false},
 
-    	{	"rectangle_laser", "rectangle2.txt", false,
+    	{	testfixturecommon{"rectangle_laser", "rectangle2.txt",
     		map[string]float64{"width": 100.0, "length": 150.0, "feedrate": 1234.0},
     		`{"laser":true}` },
+    		false},
 
-	   	{	"rectangle_inside", "rectangle3.txt", true,
+	   	{	testfixturecommon{"rectangle_inside", "rectangle3.txt",
 	    		map[string]float64{"width": 100.0, "length": 100.0, "depth": 1.0},
 	    		`{"tool_diameter":6.35,"doc":0.2}` },
+	    		true},
 	}
 
 	// test function
@@ -131,15 +138,20 @@ func TestRectangle(t *testing.T) {
 
 func TestHole(t *testing.T) {
    tests := []testfixture1 {
-    	{	"hole_peck", "hole1.txt", false,
+    	{	testfixturecommon{"hole_peck", "hole1.txt",
     		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 1.0},
     		`{"tool_diameter":4.0,"doc":0.2}` },
-    	{	"hole_nopeck", "hole2.txt", false,
+    		false},
+
+    	{	testfixturecommon{"hole_nopeck", "hole2.txt",
     		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 0.0},
     		`{"tool_diameter":4.0,"doc":0.2}` },
-    	{	"hole_laser", "hole3.txt", false,
+    		false},
+
+    	{	testfixturecommon{"hole_laser", "hole3.txt",
     		map[string]float64{"diameter": 10.0, "depth": 0, "peck": 0.0},
     		`{"laser":true}` },
+    		false},
 	}
 
 	// test function
@@ -152,6 +164,71 @@ func TestHole(t *testing.T) {
     	merge(g, tt.settings)
     	// call cam
 	    err := g.Hole(tt.args["diameter"], tt.args["depth"], tt.args["peck"])
+	    if err != nil {
+	       	t.Errorf("got Error %v, want %v", err, nil)
+	       	t.FailNow()
+	    }
+	    // validate results
+	    validate(t, tt.resultfile, b.String())
+	}
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+        	f(t, tt)
+        })
+    }
+}
+
+type testfixture2 struct {
+	testfixturecommon
+	conventional bool
+	edge string
+}
+
+func TestSideMill(t *testing.T) {
+   tests := []testfixture2 {
+    	{	name: "sidemill-bottom",
+    		resultfile: "sidemill1.txt",
+    		args: map[string]float64{"length": 200.0, "depth": 0.5},
+    		settings: `{"tool_diameter":12.0,"doc":0.2}`,
+    		conventional: false,
+    		edge: "bottom"},
+
+    	{	testfixturecommon{"sidemill-bottom-conventional", "sidemill2.txt",
+    		map[string]float64{"length": 200.0, "depth": 0.5},
+    		`{"tool_diameter":12.0,"doc":0.2}` },
+    		true,
+    		"bottom"},
+
+    	{	testfixturecommon{"sidemill-top", "sidemill3.txt",
+    		map[string]float64{"length": 100.0, "depth": 0.2},
+    		`{"tool_diameter":12.0,"doc":0.1}` },
+    		false,
+    		"top"},
+
+    	{	testfixturecommon{"sidemill-left", "sidemill4.txt",
+    		map[string]float64{"length": 200.0, "depth": 0.5},
+    		`{"tool_diameter":12.0,"doc":0.2}` },
+    		false,
+    		"left"},
+
+    	{	testfixturecommon{"sidemill-right", "sidemill5.txt",
+    		map[string]float64{"length": 200.0, "depth": 0.5},
+    		`{"tool_diameter":12.0,"doc":0.2}` },
+    		false,
+    		"right"},
+	}
+
+	// test function
+	f := func(t *testing.T, tt testfixture2) {
+		// captures result
+		var b strings.Builder
+		// create context
+    	g := NewCam(&b)
+    	// merge in overides
+    	merge(g, tt.settings)
+    	// call cam
+	    err := g.Sidemill(tt.edge, tt.conventional, tt.args["length"], tt.args["depth"])
 	    if err != nil {
 	       	t.Errorf("got Error %v, want %v", err, nil)
 	       	t.FailNow()

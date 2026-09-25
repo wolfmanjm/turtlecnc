@@ -1,0 +1,21 @@
+(Sidemill 200.0000 mm along left edge to depth of 0.5000 mm, Climb)
+(MSG Move cutter to touch the left edge and move to Bottom corner, and move to the required height)
+G1 F1800.0
+G91
+G1 X0.2000
+G1 Y212.0000
+G0 X-1.2000
+G0 Y-212.0000
+G0 X1.2000
+G1 X0.2000
+G1 Y212.0000
+G0 X-1.4000
+G0 Y-212.0000
+G0 X1.4000
+G1 X0.1000
+G1 Y212.0000
+G0 X-1.5000
+G0 Y-212.0000
+G0 X1.5000
+G90
+(-- Sidemill --)

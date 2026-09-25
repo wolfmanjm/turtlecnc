@@ -492,7 +492,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 
     fr := g.Feedrate
 
-    g.outputnl(fmt.Sprintf("(Milltop %.4fx%.4f mm, depth: %.4f mm, tool: %.4f, stepover: %.2f)", w, l, -depth, g.Tool_diameter, overlap))
+    g.outputnl(fmt.Sprintf("(Milltop %.4fx%.4f mm, depth: %.4f mm, tool: %.4f, stepover: %.2f)", w, l, depth, g.Tool_diameter, overlap))
 	g.outputnl("(MSG Position tool at front left of surface just touching it, set Z0")
 
 	if g.RPM > 0.001 {
@@ -617,7 +617,7 @@ func (g *camvars) Sidemill(edge string, conventional bool, l, depth float64) err
     	return fmt.Errorf("Depth of cut must be > 0")
     }
 
-    g.outputnl(fmt.Sprintf("(Sidemill %.4f mm along %v edge to depth of %.4f mm, %v)", l, edge, -depth, t))
+    g.outputnl(fmt.Sprintf("(Sidemill %.4f mm along %v edge to depth of %.4f mm, %v)", l, edge, depth, t))
 	g.outputnl(fmt.Sprintf("(MSG Move cutter to touch the %v edge and move to %v corner, and move to the required height)", edge, start))
 
 	if g.RPM > 0.001 {
