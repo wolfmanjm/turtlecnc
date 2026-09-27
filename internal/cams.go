@@ -789,11 +789,86 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
 	return nil
 }
 
+func (g *camvars) Pocket(width, length, depth, stepover float64) error {
+
+   	if width == 0 || length == 0 || depth == 0 {
+        return fmt.Errorf("width, length, depth required")
+    }
+
+    var overlap float64
+    if stepover > 0 {
+    	overlap = (100.0-stepover)/100.0
+    	if overlap == 0 { overlap = 0.1 }
+    } else {
+    	overlap = 0.4
+    }
+
+    doc := g.Doc
+
+	g.outputnl(fmt.Sprintf("(Pocket: %.4fx%.4fx%.4f mm, doc: %.4f mm)", width, length, depth, doc))
+	g.outputnl("(MSG Touch off bottom left corner of pocket and surface)")
+
+    z := 0.0
+    delta := g.Tool_diameter * overlap
+
+    g.SetFeedrate(g.Feedrate)
+    g.Moveto(XY(g.Tool_diameter/2, g.Tool_diameter/2))
+    g.Moveto(Z(0))
+    var w, l float64
+    // start at corner of the pocket and work inwards
+    for z > -depth {
+ 		var xoff, yoff float64
+		_, _, w, l = _shrink(width, length, g.Tool_diameter)
+     	z -= doc
+    	if z < -depth {
+    		doc = -depth - z
+    		z = -depth
+    	}
+
+    	// ramps into work
+    	zd := -doc/4
+    	g.Cutby(YZ(l, zd)) // left side
+    	g.Cutby(XZ(w, zd)) // top side
+    	g.Cutby(YZ(-l, zd)) // right side
+    	g.Cutby(XZ(-w, zd)) // bottom side
+
+     	for {
+    		xoff, yoff, w, l = _shrink(w, l, delta*2)
+    		if w <= 0 || l <= 0 { break }
+	    	// now move to next circuit
+	    	g.Cutby(XY(xoff, yoff)) // in by overlap amount
+	    	g.Cutby(Y(l)) // left side
+	    	g.Cutby(X(w)) // top side
+	    	g.Cutby(Y(-l)) // right side
+	    	g.Cutby(X(-w)) // bottom side
+		}
+	    g.Moveto(XY(g.Tool_diameter/2, g.Tool_diameter/2))
+    }
+
+    // do last pass to get to final depth
+	_, _, w, l = _shrink(width, length, g.Tool_diameter)
+    g.Moveto(Z(-depth))
+	g.Cutby(Y(l)) // left side
+	g.Cutby(X(w)) // top side
+	g.Cutby(Y(-l)) // right side
+	g.Cutby(X(-w)) // bottom side
+
+
+    g.Moveto(Z(g.Safe_z))
+    g.Moveto(XY(0, 0))
+    g.Absolute()
+    g.outputnl("(-- pocket --)")
+    return nil
+}
+
 func (g *camvars) Preamble() {
 	g.outputnl("(Begin preamble)")
 	g.outputnl("G17 G90")
 	g.outputnl("G21")
 	g.abs_state = true
+	if ! g.Laser {
+		g.outputnl(fmt.Sprintf("(Tool diameter: %.4f mm, Feedrate: %.2f mm/min)", g.Tool_diameter, g.Feedrate))
+	}
 }
 
 func Testit() {
@@ -853,4 +928,13 @@ func Testit() {
     if err:= g.Squaring(100, 100, 10, 1, 40); err != nil {
         panic(err)
     }
+
+    g.Moveto(XYZ(0, 0, 0))
+    g.Tool_diameter = 4
+    g.Preamble()
+    g.Doc = 0.2
+    if err:= g.Pocket(30, 25, 1, 50); err != nil {
+        panic(err)
+    }
+
 }
