@@ -930,10 +930,10 @@ func Testit() {
     }
 
     g.Moveto(XYZ(0, 0, 0))
-    g.Tool_diameter = 4
+    g.Tool_diameter = 6.35 / 2.0
     g.Preamble()
     g.Doc = 0.2
-    if err:= g.Pocket(30, 25, 1, 50); err != nil {
+    if err:= g.Pocket(30, 25, 1, 40); err != nil {
         panic(err)
     }
 

@@ -49,6 +49,9 @@ type values struct {
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
+    // Log the request URI and method
+    log.Printf("Request URI: %s, Method: %s", r.RequestURI, r.Method)
+
     if r.Method != http.MethodPost {
         http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
         return
@@ -176,11 +179,20 @@ func squaringJob(w http.ResponseWriter, v values) {
     }
 }
 
+func Logger(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Log the request URI and method
+        log.Printf("Request URI: %s, Method: %s", r.RequestURI, r.Method)
+        // Call the next handler
+        next.ServeHTTP(w, r)
+    })
+}
+
 func runServer(port int) {
     fileserver := http.FileServer(http.Dir("./static"))
 
     http.HandleFunc("/api/dialog-result", apiHandler)
-    http.Handle("/", fileserver)
+    http.Handle("/", Logger(fileserver))
 
     p := fmt.Sprintf(":%d", port)
     log.Printf("port running on http://localhost:%d/\n", port)
