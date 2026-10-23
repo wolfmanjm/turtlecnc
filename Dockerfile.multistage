@@ -20,7 +20,6 @@ FROM gcr.io/distroless/base-debian13 AS build-release-stage
 WORKDIR /
 
 COPY --from=build-stage /turtlecnc /turtlecnc
-COPY static/* static/
 
 EXPOSE 8080
 
