@@ -1,10 +1,12 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 
@@ -188,8 +190,15 @@ func Logger(next http.Handler) http.Handler {
     })
 }
 
+//go:embed static
+var content embed.FS
 func runServer(port int) {
-    fileserver := http.FileServer(http.Dir("./static"))
+    sub, err := fs.Sub(content, "static")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fileserver := http.FileServerFS(sub)
 
     http.HandleFunc("/api/dialog-result", apiHandler)
     http.Handle("/", Logger(fileserver))
