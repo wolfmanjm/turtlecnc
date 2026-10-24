@@ -139,18 +139,23 @@ func TestRectangle(t *testing.T) {
 func TestHole(t *testing.T) {
    tests := []testfixture1 {
     	{	testfixturecommon{"hole_peck", "hole1.txt",
-    		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 1.0},
+    		map[string]float64{"diameter": 7.0, "depth": 2, "peck": 1.0},
     		`{"tool_diameter":4.0,"doc":0.2}` },
     		false},
 
     	{	testfixturecommon{"hole_nopeck", "hole2.txt",
-    		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 0.0},
+    		map[string]float64{"diameter": 7.0, "depth": 2, "peck": 0.0},
     		`{"tool_diameter":4.0,"doc":0.2}` },
     		false},
 
     	{	testfixturecommon{"hole_laser", "hole3.txt",
     		map[string]float64{"diameter": 10.0, "depth": 0, "peck": 0.0},
     		`{"laser":true}` },
+    		false},
+
+    	{	testfixturecommon{"hole_big", "hole4.txt",
+    		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 0.0},
+    		`{"tool_diameter":4.0,"doc":0.2}` },
     		false},
 	}
 

@@ -387,13 +387,16 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 
     fr := g.Feedrate
 
-    var off float64
+    var off, o float64
+    need_multiple_passes := false
+
     if g.Laser {
         off = radius
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm for laser)", radius*2))
 
     } else {
-	    if radius*2.0 <= g.Tool_diameter {
+        off = (radius - g.Tool_diameter/2.0) // offset due to tool diameter
+	    if off <= 0 {
 	        return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.Tool_diameter)
 	    }
 
@@ -401,7 +404,6 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 	    	return fmt.Errorf("Depth of cut must be > 0")
 	    }
 
-        off = (radius - g.Tool_diameter/2.0) // offset due to tool diameter
         if depth == 0 {
         	return fmt.Errorf("Depth required")
         }
@@ -421,17 +423,31 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
      		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
      		g.outputnl("G4 S3")
      	}
+
+	    // if the hole is larger than diameter of tool we need to increase
+	    // radius of cut until we reach required diameter so we do not leave
+	    // a plug that can be forcefully ejected
+	    if off > g.Tool_diameter/2 {
+	    	o = g.Tool_diameter/2
+	    	need_multiple_passes = true
+	    } else {
+    		o = off
+    	}
     }
 
-    // move to start point
-    g.Moveby(X(off))
-    g.Absolute()
 
     if g.Laser {
+	    // move to start point
+	    g.Moveby(X(off))
+	    g.Absolute()
         g.SetFeedrate(fr)
         g.outputnl(fmt.Sprintf("G2 J0 I%.4f", -off))
 
      } else {
+	    // move to start point
+	    g.Moveby(X(o))
+	    g.Absolute()
+
         g.Moveto(Z(0))
         z := 0.0
         g.SetFeedrate(fr)
@@ -442,28 +458,42 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
             z = -doc
         }
 
+        dz := z
         delta := 0.0
         done := false
 
-        // spiral
+        // spiral down to depth
         for !done {
-            g.outputnl(fmt.Sprintf("G2 J0 I%.4f Z%.4f", -off, z))
+            g.outputnl(fmt.Sprintf("G2 J0 I%.4f Z%.4f", -o, dz))
             delta += doc
             // see if we need to peck to get rid of swarf
             if peck > 0 && delta > peck {
                 delta = 0
                 g.Moveto(Z(g.Safe_z))
                 g.outputnl("G4 S1")
-                g.Cutto(Z(z))
+                g.Cutto(Z(dz))
             }
 
-            z -= doc
+            dz -= doc
 
-            if z < depth {
+            if dz < depth {
                 // we do a complete circle to make sure the bottom is flat
-                g.outputnl(fmt.Sprintf("G2 J0 I%.4f Z%.4f", -off, depth))
-                g.outputnl(fmt.Sprintf("G2 J0 I%.4f Z%.4f", -off, depth))
-                done = true
+                g.outputnl(fmt.Sprintf("G2 J0 I%.4f Z%.4f", -o, depth))
+                g.outputnl(fmt.Sprintf("G2 J0 I%.4f Z%.4f", -o, depth))
+
+                if need_multiple_passes {
+	                delta = 0
+    	            g.Moveto(Z(0))
+    	            dz = z
+    	            o += g.Tool_diameter/2
+    	            if o >= off {
+    	            	o = off
+    	            	need_multiple_passes = false
+    	            }
+
+                } else {
+                	done = true
+                }
             }
         }
 
@@ -905,7 +935,15 @@ func Testit() {
     g.Moveto(Z(0))
     g.Laser = false
     g.Doc = 0.2
-    if err:= g.Hole(10.0, 2, 1); err != nil {
+    g.Tool_diameter = 4
+    if err:= g.Hole(8.0, 2, 1); err != nil {
+        panic(err)
+    }
+
+    g.Moveto(Z(0))
+    g.Laser = false
+    g.Doc = 0.2
+    if err:= g.Hole(13.0, 2, 0); err != nil {
         panic(err)
     }
 
