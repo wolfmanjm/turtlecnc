@@ -157,6 +157,11 @@ func TestHole(t *testing.T) {
     		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 0.0},
     		`{"tool_diameter":4.0,"doc":0.2}` },
     		false},
+
+    	{	testfixturecommon{"hole_bigger", "hole5.txt",
+    		map[string]float64{"diameter": 20.0, "depth": 2, "peck": 0.0},
+    		`{"tool_diameter":4.0,"doc":0.2}` },
+    		false},
 	}
 
 	// test function
@@ -174,6 +179,7 @@ func TestHole(t *testing.T) {
 	       	t.FailNow()
 	    }
 	    // validate results
+	    // println(b.String())
 	    validate(t, tt.resultfile, b.String())
 	}
 

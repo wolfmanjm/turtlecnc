@@ -485,7 +485,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
     	            g.Moveto(Z(1)) // move up
 
     	            dz = z
-    	            o += g.Tool_diameter/2
+    	            o += g.Tool_diameter
     	            if o >= off {
     	            	o = off
     	            	need_multiple_passes = false
