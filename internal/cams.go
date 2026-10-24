@@ -412,7 +412,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm, depth: %.4f, doc: %.4f)", radius*2, -depth, doc))
 
 	    if peck == 0 {
-	        if radius*2.0 <= g.Tool_diameter+2 {
+	        if radius*2.0 <= g.Tool_diameter+1 {
 	            fmt.Println("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
 	        }
 	    } else {
@@ -424,10 +424,10 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
      		g.outputnl("G4 S3")
      	}
 
-	    // if the hole is larger than diameter of tool we need to increase
+	    // if the hole is larger than twice diameter of tool we need to increase
 	    // radius of cut until we reach required diameter so we do not leave
 	    // a plug that can be forcefully ejected
-	    if off > g.Tool_diameter/2 {
+	    if diameter > g.Tool_diameter*2 {
 	    	o = g.Tool_diameter/2
 	    	need_multiple_passes = true
 	    } else {
@@ -446,8 +446,6 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
      } else {
 	    // move to start point
 	    g.Moveby(X(o))
-	    g.Absolute()
-
         g.Moveto(Z(0))
         z := 0.0
         g.SetFeedrate(fr)
@@ -483,13 +481,18 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 
                 if need_multiple_passes {
 	                delta = 0
-    	            g.Moveto(Z(0))
+    	            g.Moveby(X(-o)) // center it
+    	            g.Moveto(Z(1)) // move up
+
     	            dz = z
     	            o += g.Tool_diameter/2
     	            if o >= off {
     	            	o = off
     	            	need_multiple_passes = false
     	            }
+				    // move to new start point
+	    			g.Moveby(X(o))
+    	            g.Moveto(Z(0))
 
                 } else {
                 	done = true
