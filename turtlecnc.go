@@ -101,7 +101,6 @@ func rectangleJob(w io.Writer, v values) {
     g := cams.NewCam(w)
 
     g.Laser = false
-    g.Preamble()
 
     inside := true
     switch v.Side {
@@ -119,6 +118,9 @@ func rectangleJob(w io.Writer, v values) {
     g.Tool_diameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
+    g.Feedrate = v.Feedrate
+
+    g.Preamble()
 
     var args = map[string]float64 {
         "width": v.Width,
@@ -136,14 +138,17 @@ func holeJob(w io.Writer, v values) {
     // depth:12 feedrate:1400 holedia:5 jobname:hole laser:false peck:0 rpm:10000 tooldia:6.35
     g := cams.NewCam(w)
 
-    g.Laser = v.Laser
-    g.Preamble()
 
-    if !g.Laser {
+    if !v.Laser {
         g.Tool_diameter = v.Tooldia
         g.Doc = v.Doc
         g.RPM = v.RPM
     }
+
+    g.Laser = v.Laser
+    g.Feedrate = v.Feedrate
+
+    g.Preamble()
 
     g.Feedrate = v.Feedrate
 
@@ -155,12 +160,13 @@ func holeJob(w io.Writer, v values) {
 func sidemillJob(w io.Writer, v values) {
     // {Kind:sidemill Jobname:surface Length:300 Width:0 Diameter:0 Depth:1 RPM:0 Side: Tooldia:12 Doc:0.5 Peck:0 Feedrate:1400 Laser:false}
     g := cams.NewCam(w)
-    g.Preamble()
 
     g.Tool_diameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
+
+    g.Preamble()
 
     if err := g.Sidemill(v.Side, v.Conventional, v.Length, v.Depth); err != nil {
         fmt.Fprintf(w, "Sidemill() failed: %s", err.Error())
@@ -169,12 +175,13 @@ func sidemillJob(w io.Writer, v values) {
 
 func squaringJob(w http.ResponseWriter, v values) {
     g := cams.NewCam(w)
-    g.Preamble()
 
     g.Tool_diameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
+
+    g.Preamble()
 
     if err := g.Squaring(v.Width, v.Length, v.Height, v.Depth, v.Stepover); err != nil {
         fmt.Fprintf(w, "Squaring() failed: %s", err.Error())

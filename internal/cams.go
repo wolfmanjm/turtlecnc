@@ -413,7 +413,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 
 	    if peck == 0 {
 	        if radius*2.0 <= g.Tool_diameter+1 {
-	            fmt.Println("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
+	            g.outputnl("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
 	        }
 	    } else {
 	        g.outputnl(fmt.Sprintf("(Peck set to: %.4f mm)", peck))
