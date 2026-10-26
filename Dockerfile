@@ -9,8 +9,6 @@ WORKDIR /app
 COPY . .
 RUN go mod download
 
-COPY . .
-
 # Build
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./turtlecnc
 

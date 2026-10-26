@@ -87,6 +87,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
     case "squaring":
         log.Println(fmt.Sprintf("We got a squaring job: %+v", v))
         squaringJob(w, v)
+    case "pocket":
+        log.Println(fmt.Sprintf("We got a pocket job: %+v", v))
+        pocketJob(w, v)
     case "circle":
         log.Println(fmt.Sprintf("We got a circle job: %+v", v))
     default:
@@ -188,6 +191,22 @@ func squaringJob(w http.ResponseWriter, v values) {
     }
 }
 
+
+func pocketJob(w http.ResponseWriter, v values) {
+    g := cams.NewCam(w)
+
+    g.Tool_diameter = v.Tooldia
+    g.Doc = v.Doc
+    g.RPM = v.RPM
+    g.Feedrate = v.Feedrate
+
+    g.Preamble()
+
+    if err := g.Pocket(v.Width, v.Length, v.Depth, v.Stepover); err != nil {
+        fmt.Fprintf(w, "Pocket() failed: %s", err.Error())
+    }
+}
+
 func Logger(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         // Log the request URI and method
@@ -211,7 +230,7 @@ func runServer(port int) {
     http.Handle("/", Logger(fileserver))
 
     p := fmt.Sprintf(":%d", port)
-    log.Printf("port running on http://localhost:%d/\n", port)
+    log.Printf("turtlecnc running on port: %d\n", port)
     if err := http.ListenAndServe(p, nil); err != nil{
         log.Fatal(err)
     }

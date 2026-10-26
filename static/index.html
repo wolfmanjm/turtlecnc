@@ -18,6 +18,7 @@
   <button class="cd-btn" data-job="hole">&lt; &nbsp;<span class="cd-hot">H</span>ole&nbsp; &gt;</button>
   <button class="cd-btn" data-job="sidemill">&lt; &nbsp;<span class="cd-hot">S</span>ide Mill&nbsp; &gt;</button>
   <button class="cd-btn" data-job="squaring">&lt; &nbsp;<span class="cd-hot">S</span>quaring&nbsp; &gt;</button>
+  <button class="cd-btn" data-job="pocket">&lt; &nbsp;<span class="cd-hot">P</span>ocket&nbsp; &gt;</button>
 </div>
 
 <pre class="cd-output" id="msgs" aria-live="polite"></pre>
@@ -122,6 +123,23 @@ const SPECS = {
       { name: "width",   label: "Width",         ...mm, value: 200 },
       { name: "length",  label: "Length",        ...mm, value: 300 },
       { name: "height",  label: "Height",        ...mm, value: 0 },
+      { name: "doc",     label: "Depth of cut",  ...mm, value: 0.1, min: 0.001, unit: "mm per pass" },
+      { name: "depth",   label: "Depth",         ...mm, value: 0 },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
+      { name: "tooldia", label: "Tool diameter", ...mm, value: 12, min: 0.001 },
+      { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
+      { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
+    ]
+  },
+
+  pocket: {
+    title: "Cut a pocket into some stock",
+    blurb: "Cut a rectangular pocket into the top of stock",
+
+    fields: [
+      { name: "jobname", label: "Job name",      type: "text", value: "pocket" },
+      { name: "width",   label: "Width",         ...mm, value: 200 },
+      { name: "length",  label: "Length",        ...mm, value: 300 },
       { name: "doc",     label: "Depth of cut",  ...mm, value: 0.1, min: 0.001, unit: "mm per pass" },
       { name: "depth",   label: "Depth",         ...mm, value: 0 },
       { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},

@@ -845,6 +845,14 @@ func (g *camvars) Pocket(width, length, depth, stepover float64) error {
     delta := g.Tool_diameter * overlap
 
     g.SetFeedrate(g.Feedrate)
+
+    g.Moveto(Z(g.Safe_z))
+
+ 	if g.RPM > 0.001 {
+ 		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
+ 		g.outputnl("G4 S3")
+ 	}
+
     g.Moveto(XY(g.Tool_diameter/2, g.Tool_diameter/2))
     g.Moveto(Z(0))
     var w, l float64
@@ -889,7 +897,11 @@ func (g *camvars) Pocket(width, length, depth, stepover float64) error {
 
     g.Moveto(Z(g.Safe_z))
     g.Moveto(XY(0, 0))
-    g.Absolute()
+
+   	if g.RPM > 0.001 {
+ 		g.outputnl("M5")
+ 	}
+
     g.outputnl("(-- pocket --)")
     return nil
 }
