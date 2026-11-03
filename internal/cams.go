@@ -278,7 +278,11 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
         if radius, ok = args["diameter"]; !ok || radius == 0 {
             return fmt.Errorf("radius or diameter required")
         }
-        radius = radius * 2
+        radius = radius / 2
+    }
+
+    if radius <= 0 {
+    	return fmt.Errorf("diameter must be > 0")
     }
 
     if s, ok := args["segments"]; ok && s > 0 {
@@ -318,13 +322,22 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
         }
         depth = -depth
 
-        g.outputnl(fmt.Sprintf("(Circle: radius %.4f mm, segments %v, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", radius, segments, inside, -depth, doc, g.Tool_diameter))
+        if inside && g.Tool_diameter >= radius*2 {
+    		return fmt.Errorf("Cannot cut inside diameter that is less than tool diameter")
+        }
+
+        g.outputnl(fmt.Sprintf("(Circle: diameter %.4f mm, segments %v, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", radius*2, segments, inside, -depth, doc, g.Tool_diameter))
 
         if inside {
             radius = radius - g.Tool_diameter/2.0
         } else {
             radius = radius + g.Tool_diameter/2.0
         }
+
+    	if g.RPM > 0.001 {
+     		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))
+     		g.outputnl("G4 S3")
+     	}
 
         pa := _circle(radius, segments)
         g.SetFeedrate(fr)
@@ -368,6 +381,11 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
         }
 
         g.Moveto(Z(g.Safe_z))
+
+       	if g.RPM > 0.001 {
+    		g.outputnl("M5")
+     	}
+
         g.Moveby(XY(-p0.x, -p0.y))
     }
 

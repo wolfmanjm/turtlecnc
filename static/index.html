@@ -82,14 +82,16 @@ const SPECS = {
 
   circle: {
     title: "Circle profile",
-    blurb: "Stock and cutter values, profiles a circle to the given depth",
+    blurb: "Stock and cutter values, profiles a circle to the given depth, segments is optional",
     fields: [
+      { name: "jobname", label: "Job name", type: "text", value: "circle", maxlength: 40 },
       { name: "diameter",   label: "Diameter",   ...mm, value: 20 },
       { name: "depth",   label: "Depth",         ...mm, value: 6 },
       { name: "tooldia", label: "Tool diameter", ...mm, value: 6.35, min: 0.001 },
       { name: "doc",     label: "Depth of cut",  ...mm, value: 1.5, min: 0.001, unit: "mm per pass" },
       { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
+      { name: "stepover",label: "Segments",      type: "number", value: 0, unit: "leave at 0 for auto"},
       { name: "side",    label: "Cutter offset", type: "radio", value: "inside",
         options: [
           { value: "inside",  label: "Inside \u2014 cut within the boundary" },

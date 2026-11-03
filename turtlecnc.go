@@ -92,6 +92,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
         pocketJob(w, v)
     case "circle":
         log.Println(fmt.Sprintf("We got a circle job: %+v", v))
+        circleJob(w, v)
     default:
         log.Println(fmt.Sprintf("Unknown job: %v, %+v", kind, v))
         fmt.Fprint(w, fmt.Sprintf("Unknown job: %v", kind))
@@ -129,11 +130,47 @@ func rectangleJob(w io.Writer, v values) {
         "width": v.Width,
         "length": v.Length,
         "depth": v.Depth,
-        "feedrate": v.Feedrate,
     }
 
      if err := g.Rectangle(inside, args); err != nil {
         fmt.Fprintf(w, "Rectangle() failed: %s", err.Error())
+    }
+}
+
+func circleJob(w io.Writer, v values) {
+    // depth:6 doc:1.5 feedrate:1400 jobname:rectangle length:150 rpm:10000 side:laser tooldia:6.35 width:100
+    g := cams.NewCam(w)
+
+    g.Laser = false
+
+    inside := true
+    switch v.Side {
+    case "inside":
+        inside = true
+    case "outside":
+        inside = false
+    case "laser":
+        g.Laser = true
+    default:
+        fmt.Fprintf(w, "Unknown side: %v", v.Side)
+        return
+    }
+
+    g.Tool_diameter = v.Tooldia
+    g.Doc = v.Doc
+    g.RPM = v.RPM
+    g.Feedrate = v.Feedrate
+
+    g.Preamble()
+
+    var args = map[string]float64 {
+        "diameter": v.Diameter,
+        "depth": v.Depth,
+        "segments": v.Stepover,
+    }
+
+     if err := g.Circle(inside, args); err != nil {
+        fmt.Fprintf(w, "Circle() failed: %s", err.Error())
     }
 }
 
