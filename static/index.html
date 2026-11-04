@@ -110,8 +110,8 @@ const SPECS = {
       { name: "width",   label: "Width",         ...mm, value: 200 },
       { name: "length",  label: "Length",        ...mm, value: 300 },
       { name: "depth",   label: "Depth",         ...mm, value: 1 },
-      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "tooldia", label: "Tool diameter", ...mm, value: 50, min: 0.001 },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
     ]
   },
@@ -127,8 +127,8 @@ const SPECS = {
       { name: "height",  label: "Height",        ...mm, value: 0 },
       { name: "doc",     label: "Depth of cut",  ...mm, value: 0.1, min: 0.001, unit: "mm per pass" },
       { name: "depth",   label: "Depth",         ...mm, value: 0 },
-      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "tooldia", label: "Tool diameter", ...mm, value: 12, min: 0.001 },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
       { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
     ]
@@ -144,10 +144,11 @@ const SPECS = {
       { name: "length",  label: "Length",        ...mm, value: 300 },
       { name: "doc",     label: "Depth of cut",  ...mm, value: 0.1, min: 0.001, unit: "mm per pass" },
       { name: "depth",   label: "Depth",         ...mm, value: 0 },
-      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "tooldia", label: "Tool diameter", ...mm, value: 12, min: 0.001 },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
       { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
+      { name: "spiral",  label: "Spiral path",   type: "check", value: false },
     ]
   },
 
@@ -169,8 +170,8 @@ const SPECS = {
           { value: "right",   label: "Mill the right edge" },
         ]},
 
-      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "tooldia", label: "Tool diameter", ...mm, value: 12, min: 0.001 },
+      { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
       { name: "conventional", label: "Conventional milling", type: "check", value: false }
     ]

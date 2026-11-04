@@ -840,16 +840,20 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
 	return nil
 }
 
-func (g *camvars) Pocket(width, length, depth, stepover float64) error {
+func (g *camvars) Pocket(spiral bool, width, length, depth, stepover float64) error {
 
    	if width == 0 || length == 0 || depth == 0 {
         return fmt.Errorf("width, length, depth required")
     }
 
     var overlap float64
-    if stepover > 0 {
+    if stepover >= 0 {
     	overlap = (100.0-stepover)/100.0
-    	if overlap == 0 { overlap = 0.1 }
+    	if overlap <= 0 {
+    		overlap = 0.1
+    	} else if overlap > 1 {
+    		overlap = 1
+    	}
     } else {
     	overlap = 0.4
     }
@@ -870,7 +874,6 @@ func (g *camvars) Pocket(width, length, depth, stepover float64) error {
  		g.outputnl("G4 S3")
  	}
 
- 	spiral := true
  	if spiral {
     	pocketSpiral(g, depth, width, length, doc, delta)
  	} else {
@@ -893,13 +896,18 @@ func (g *camvars) Pocket(width, length, depth, stepover float64) error {
 func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc float64, delta float64) {
 
 	var deltax, deltay float64
+	var iter int
 
 	if width > length {
-		deltay = delta
-		deltax = delta * width/length
-	} else {
 		deltax = delta
-		deltay = delta * length/width
+		i := (width/2 - g.ToolDiameter/2) / delta
+		deltay = (length/2 - g.ToolDiameter/2) / i
+		iter = int(math.Floor(i))
+	} else {
+		deltay = delta
+		i := (length/2 - g.ToolDiameter/2) / delta
+		deltax = (width/2 - g.ToolDiameter/2) / i
+		iter = int(math.Floor(i))
 	}
 
 	z := 0.0
@@ -909,7 +917,7 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 	// start at center of stock
 	g.Cutto(Z(0))
 
-//	for z > -depth {
+	for z > -depth {
 		z -= doc
 		if z < -depth {
 			doc = -depth - z
@@ -925,7 +933,7 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 		px, py := x, y
 
 		// cut spiral path until we get close to the edges
-		for /* px+dx <= width - g.ToolDiameter/2 && */ py+dy <= length - g.ToolDiameter/2 {
+		for i := 0; i < iter; i++ {
 			g.Cutby(Y(dy))
 			g.Cutby(X(dx))
 			px += dx
@@ -951,7 +959,7 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 		g.Cutto(Y(length - g.ToolDiameter/2))
 		g.Cutto(X(x))
 
-//	}
+	}
 
 }
 
@@ -1080,10 +1088,10 @@ func Testit() {
     }
 */
     g.Moveto(XYZ(0, 0, 0))
-    g.ToolDiameter = 3.175 * 2
+    g.ToolDiameter = 3.175
     g.Preamble()
     g.Doc = 0.2
-    if err:= g.Pocket(40, 20, 1, 0); err != nil {
+    if err:= g.Pocket(true, 40, 40, 1, 40.0); err != nil {
         panic(err)
     }
 

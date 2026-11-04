@@ -48,6 +48,7 @@ type values struct {
     Stepover float64
     Laser bool
     Conventional bool
+    Spiral bool
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
@@ -239,7 +240,7 @@ func pocketJob(w http.ResponseWriter, v values) {
 
     g.Preamble()
 
-    if err := g.Pocket(v.Width, v.Length, v.Depth, v.Stepover); err != nil {
+    if err := g.Pocket(v.Spiral, v.Width, v.Length, v.Depth, v.Stepover); err != nil {
         fmt.Fprintf(w, "Pocket() failed: %s", err.Error())
     }
 }
