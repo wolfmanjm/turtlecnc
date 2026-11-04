@@ -119,7 +119,7 @@ func rectangleJob(w io.Writer, v values) {
         return
     }
 
-    g.Tool_diameter = v.Tooldia
+    g.ToolDiameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
@@ -156,7 +156,7 @@ func circleJob(w io.Writer, v values) {
         return
     }
 
-    g.Tool_diameter = v.Tooldia
+    g.ToolDiameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
@@ -180,7 +180,7 @@ func holeJob(w io.Writer, v values) {
 
 
     if !v.Laser {
-        g.Tool_diameter = v.Tooldia
+        g.ToolDiameter = v.Tooldia
         g.Doc = v.Doc
         g.RPM = v.RPM
     }
@@ -201,7 +201,7 @@ func sidemillJob(w io.Writer, v values) {
     // {Kind:sidemill Jobname:surface Length:300 Width:0 Diameter:0 Depth:1 RPM:0 Side: Tooldia:12 Doc:0.5 Peck:0 Feedrate:1400 Laser:false}
     g := cams.NewCam(w)
 
-    g.Tool_diameter = v.Tooldia
+    g.ToolDiameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
@@ -216,7 +216,7 @@ func sidemillJob(w io.Writer, v values) {
 func squaringJob(w http.ResponseWriter, v values) {
     g := cams.NewCam(w)
 
-    g.Tool_diameter = v.Tooldia
+    g.ToolDiameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
@@ -232,7 +232,7 @@ func squaringJob(w http.ResponseWriter, v values) {
 func pocketJob(w http.ResponseWriter, v values) {
     g := cams.NewCam(w)
 
-    g.Tool_diameter = v.Tooldia
+    g.ToolDiameter = v.Tooldia
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate

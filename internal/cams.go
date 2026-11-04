@@ -9,7 +9,7 @@ import (
 
 type camvars struct {
 	Safe_z        float64
-	Tool_diameter float64
+	ToolDiameter  float64
 	Doc           float64
 	Feedrate      float64
 	Plunge_rate   float64
@@ -29,7 +29,7 @@ func NewCam(out io.Writer) *camvars {
     g.Feedrate = 1800
     g.Plunge_rate = 0
     g.Safe_z = 20
-    g.Tool_diameter = 3.175
+    g.ToolDiameter = 3.175
     g.Doc = 0.2
     g.RPM = 0
 	g.abs_state = true
@@ -184,15 +184,15 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
         }
         depth = -depth
 
-        g.outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", w, l, inside, -depth, doc, g.Tool_diameter))
+        g.outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", w, l, inside, -depth, doc, g.ToolDiameter))
 
         // shrink rectangle if inside cut or expand if outside cut
 
         var xoff, yoff float64
         if inside {
-            xoff, yoff, w, l = _shrink(w, l, g.Tool_diameter)
+            xoff, yoff, w, l = _shrink(w, l, g.ToolDiameter)
         } else {
-            xoff, yoff, w, l = _expand(w, l, g.Tool_diameter)
+            xoff, yoff, w, l = _expand(w, l, g.ToolDiameter)
         }
 
     	if g.RPM > 0.001 {
@@ -322,16 +322,16 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
         }
         depth = -depth
 
-        if inside && g.Tool_diameter >= radius*2 {
+        if inside && g.ToolDiameter >= radius*2 {
     		return fmt.Errorf("Cannot cut inside diameter that is less than tool diameter")
         }
 
-        g.outputnl(fmt.Sprintf("(Circle: diameter %.4f mm, segments %v, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", radius*2, segments, inside, -depth, doc, g.Tool_diameter))
+        g.outputnl(fmt.Sprintf("(Circle: diameter %.4f mm, segments %v, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", radius*2, segments, inside, -depth, doc, g.ToolDiameter))
 
         if inside {
-            radius = radius - g.Tool_diameter/2.0
+            radius = radius - g.ToolDiameter/2.0
         } else {
-            radius = radius + g.Tool_diameter/2.0
+            radius = radius + g.ToolDiameter/2.0
         }
 
     	if g.RPM > 0.001 {
@@ -413,9 +413,9 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm for laser)", radius*2))
 
     } else {
-        off = (radius - g.Tool_diameter/2.0) // offset due to tool diameter
+        off = (radius - g.ToolDiameter/2.0) // offset due to tool diameter
 	    if off <= 0 {
-	        return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.Tool_diameter)
+	        return fmt.Errorf("cannot make holes smaller than tool diameter %v", g.ToolDiameter)
 	    }
 
 	    if doc <= 0 {
@@ -430,7 +430,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
         g.outputnl(fmt.Sprintf("(Hole diameter: %.4f mm, depth: %.4f, doc: %.4f)", radius*2, -depth, doc))
 
 	    if peck == 0 {
-	        if radius*2.0 <= g.Tool_diameter+1 {
+	        if radius*2.0 <= g.ToolDiameter+1 {
 	            g.outputnl("(WARNING: you may need to add the peck parameter to make holes so close to the tool diameter)")
 	        }
 	    } else {
@@ -445,8 +445,8 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 	    // if the hole is larger than twice diameter of tool we need to increase
 	    // radius of cut until we reach required diameter so we do not leave
 	    // a plug that can be forcefully ejected
-	    if diameter > g.Tool_diameter*2 {
-	    	o = g.Tool_diameter/2
+	    if diameter > g.ToolDiameter*2 {
+	    	o = g.ToolDiameter/2
 	    	need_multiple_passes = true
 	    } else {
     		o = off
@@ -503,7 +503,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
     	            g.Moveto(Z(1)) // move up
 
     	            dz = z
-    	            o += g.Tool_diameter
+    	            o += g.ToolDiameter
     	            if o >= off {
     	            	o = off
     	            	need_multiple_passes = false
@@ -543,7 +543,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 
     fr := g.Feedrate
 
-    g.outputnl(fmt.Sprintf("(Milltop %.4fx%.4f mm, depth: %.4f mm, tool: %.4f, stepover: %.2f)", w, l, depth, g.Tool_diameter, overlap))
+    g.outputnl(fmt.Sprintf("(Milltop %.4fx%.4f mm, depth: %.4f mm, tool: %.4f, stepover: %.2f)", w, l, depth, g.ToolDiameter, overlap))
 	g.outputnl("(MSG Position tool at front left of surface just touching it, set Z0")
 
 	if g.RPM > 0.001 {
@@ -560,7 +560,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
     g.Cutby(Y(-l))
 
     // mill inside grid
-    inc := g.Tool_diameter * overlap
+    inc := g.ToolDiameter * overlap
     y := inc
     dir := 1.0
     for y <= l {
@@ -677,7 +677,7 @@ func (g *camvars) Sidemill(edge string, conventional bool, l, depth float64) err
  	}
 
 	retract := 1.0
-	extra := g.Tool_diameter
+	extra := g.ToolDiameter
 	d := depth
 
 	g.SetFeedrate(fr)
@@ -744,12 +744,12 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
 	g.outputnl("(MSG touch off at the bottom left corner and set XY to zero)")
 
     // set the Y increment on each pass based on tool size and overlap set
-    inc := g.Tool_diameter * overlap
+    inc := g.ToolDiameter * overlap
     // set the start x and end x such that the tool clears the stock before it moves up and down
-    xs := -g.Tool_diameter // only needs to be half but make sure we totally are clear of stock
-    xe := w + g.Tool_diameter
-    y1 := l + g.Tool_diameter/2.0 - inc  // initial engage at top is overlap
-    y2 := -g.Tool_diameter/2.0 + inc       // initial engage at bottom is overlap
+    xs := -g.ToolDiameter // only needs to be half but make sure we totally are clear of stock
+    xe := w + g.ToolDiameter
+    y1 := l + g.ToolDiameter/2.0 - inc  // initial engage at top is overlap
+    y2 := -g.ToolDiameter/2.0 + inc       // initial engage at bottom is overlap
 
     g.Moveto(Z(g.Safe_z))
 
@@ -788,8 +788,8 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
       	if z <= -depth { break }
 
 		// start again at new depth until we reach final
-		y1 = l + g.Tool_diameter/2.0 - inc  // initial engage at top is overlap
-		y2 = -g.Tool_diameter/2.0 + inc     // initial engage at bottom is overlap
+		y1 = l + g.ToolDiameter/2.0 - inc  // initial engage at top is overlap
+		y2 = -g.ToolDiameter/2.0 + inc     // initial engage at bottom is overlap
 
 	    // move to required starting position
 	    g.Moveto(Y(y1))
@@ -807,11 +807,11 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
     // it tries to take up backlash presuming home has been set in +X +Y direction
     if height > 0 {
     	// should woc be a separate parameter?
-    	smwoc := (-g.Tool_diameter/2.0) + doc
+    	smwoc := (-g.ToolDiameter/2.0) + doc
     	g.outputnl("(skim edges)")
     	g.Moveto(Z(g.Safe_z))
 	    // move to a position to take up backlash
-		g.Moveto(XY(-g.Tool_diameter, -g.Tool_diameter))
+		g.Moveto(XY(-g.ToolDiameter, -g.ToolDiameter))
 	    // move to required cutting depth
 	    g.Cutto(Z(-height))
    	  	g.Cutto(X(smwoc))
@@ -821,13 +821,13 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
     	// skim top edge to left edge
    	  	g.Cutto(X(w-smwoc))
     	// skim right edge all the way down past end
-   	  	g.Cutto(Y(-g.Tool_diameter))
+   	  	g.Cutto(Y(-g.ToolDiameter))
     	// skim bottom edge move back to it to take up backlash
    	  	g.Cutto(Y(smwoc))
 
-   	  	g.Cutto(X(-g.Tool_diameter))
+   	  	g.Cutto(X(-g.ToolDiameter))
    	  	// leave to the left and bottom
-	    g.Moveto(XY(-g.Tool_diameter, -g.Tool_diameter))
+	    g.Moveto(XY(-g.ToolDiameter, -g.ToolDiameter))
     }
 
     g.Moveto(Z(g.Safe_z))
@@ -859,8 +859,7 @@ func (g *camvars) Pocket(width, length, depth, stepover float64) error {
 	g.outputnl(fmt.Sprintf("(Pocket: %.4fx%.4fx%.4f mm, doc: %.4f mm)", width, length, depth, doc))
 	g.outputnl("(MSG Touch off bottom left corner of pocket and surface)")
 
-    z := 0.0
-    delta := g.Tool_diameter * overlap
+    delta := g.ToolDiameter * overlap
 
     g.SetFeedrate(g.Feedrate)
 
@@ -871,46 +870,12 @@ func (g *camvars) Pocket(width, length, depth, stepover float64) error {
  		g.outputnl("G4 S3")
  	}
 
-    g.Moveto(XY(g.Tool_diameter/2, g.Tool_diameter/2))
-    g.Moveto(Z(0))
-    var w, l float64
-    // start at corner of the pocket and work inwards
-    for z > -depth {
- 		var xoff, yoff float64
-		_, _, w, l = _shrink(width, length, g.Tool_diameter)
-     	z -= doc
-    	if z < -depth {
-    		doc = -depth - z
-    		z = -depth
-    	}
-
-    	// ramps into work
-    	zd := -doc/4
-    	g.Cutby(YZ(l, zd)) // left side
-    	g.Cutby(XZ(w, zd)) // top side
-    	g.Cutby(YZ(-l, zd)) // right side
-    	g.Cutby(XZ(-w, zd)) // bottom side
-
-     	for {
-    		xoff, yoff, w, l = _shrink(w, l, delta*2)
-    		if w <= 0 || l <= 0 { break }
-	    	// now move to next circuit
-	    	g.Cutby(XY(xoff, yoff)) // in by overlap amount
-	    	g.Cutby(Y(l)) // left side
-	    	g.Cutby(X(w)) // top side
-	    	g.Cutby(Y(-l)) // right side
-	    	g.Cutby(X(-w)) // bottom side
-		}
-	    g.Moveto(XY(g.Tool_diameter/2, g.Tool_diameter/2))
+ 	spiral := true
+ 	if spiral {
+    	pocketSpiral(g, depth, width, length, doc, delta)
+ 	} else {
+    	pocketParallel(g, depth, width, length, doc, delta)
     }
-
-    // do last pass to get to final depth
-	_, _, w, l = _shrink(width, length, g.Tool_diameter)
-    g.Moveto(Z(-depth))
-	g.Cutby(Y(l)) // left side
-	g.Cutby(X(w)) // top side
-	g.Cutby(Y(-l)) // right side
-	g.Cutby(X(-w)) // bottom side
 
 
     g.Moveto(Z(g.Safe_z))
@@ -924,19 +889,133 @@ func (g *camvars) Pocket(width, length, depth, stepover float64) error {
     return nil
 }
 
+// cuts a pocket using spiral cuts increasing in size, starting from inner to outer
+func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc float64, delta float64) {
+
+	var deltax, deltay float64
+
+	if width > length {
+		deltay = delta
+		deltax = delta * width/length
+	} else {
+		deltax = delta
+		deltay = delta * length/width
+	}
+
+	z := 0.0
+	x := width/2
+	y := length/2
+
+	// start at center of stock
+	g.Cutto(Z(0))
+
+//	for z > -depth {
+		z -= doc
+		if z < -depth {
+			doc = -depth - z
+			z = -depth
+		}
+
+		g.Moveto(XY(x, y))
+		// move into stock by DoC
+		g.Cutby(Z(z))
+
+		dx := deltax
+		dy := deltay
+		px, py := x, y
+
+		// cut spiral path until we get close to the edges
+		for /* px+dx <= width - g.ToolDiameter/2 && */ py+dy <= length - g.ToolDiameter/2 {
+			g.Cutby(Y(dy))
+			g.Cutby(X(dx))
+			px += dx
+			py += dy
+
+			dy += deltay
+			dx += deltax
+
+			g.Cutby(Y(-dy))
+			g.Cutby(X(-dx))
+			px -= dx
+			py -= dy
+
+			dy += deltay
+			dx += deltax
+		}
+
+		// cut final outline
+		g.Cutto(Y(length - g.ToolDiameter/2))
+		g.Cutto(X(width - g.ToolDiameter/2))
+		g.Cutto(Y(g.ToolDiameter/2))
+		g.Cutto(X(g.ToolDiameter/2))
+		g.Cutto(Y(length - g.ToolDiameter/2))
+		g.Cutto(X(x))
+
+//	}
+
+}
+
+// cuts a pocket using parallel rectangles decreasing in size, starting from outer to inner
+func pocketParallel(g *camvars, depth float64, width float64, length float64, doc float64, delta float64) {
+	g.Moveto(XY(g.ToolDiameter/2, g.ToolDiameter/2))
+	g.Moveto(Z(0))
+	var w, l, z float64
+	z = 0.0
+	// start at corner of the pocket and work inwards
+	for z > -depth {
+		var xoff, yoff float64
+		_, _, w, l = _shrink(width, length, g.ToolDiameter)
+		z -= doc
+		if z < -depth {
+			doc = -depth - z
+			z = -depth
+		}
+
+		// ramps into work
+		zd := -doc / 4
+		g.Cutby(YZ(l, zd))  // left side
+		g.Cutby(XZ(w, zd))  // top side
+		g.Cutby(YZ(-l, zd)) // right side
+		g.Cutby(XZ(-w, zd)) // bottom side
+
+		for {
+			xoff, yoff, w, l = _shrink(w, l, delta*2)
+			if w <= 0 || l <= 0 {
+				break
+			}
+			// now move to next circuit
+			g.Cutby(XY(xoff, yoff)) // in by overlap amount
+			g.Cutby(Y(l))           // left side
+			g.Cutby(X(w))           // top side
+			g.Cutby(Y(-l))          // right side
+			g.Cutby(X(-w))          // bottom side
+		}
+		g.Moveto(XY(g.ToolDiameter/2, g.ToolDiameter/2))
+	}
+
+	// do last pass to get to final depth
+	_, _, w, l = _shrink(width, length, g.ToolDiameter)
+	g.Moveto(Z(-depth))
+	g.Cutby(Y(l))  // left side
+	g.Cutby(X(w))  // top side
+	g.Cutby(Y(-l)) // right side
+	g.Cutby(X(-w))
+}
+
 func (g *camvars) Preamble() {
 	g.outputnl("(Begin preamble)")
 	g.outputnl("G17 G90")
 	g.outputnl("G21")
 	g.abs_state = true
 	if ! g.Laser {
-		g.outputnl(fmt.Sprintf("(Tool diameter: %.4f mm, Feedrate: %.2f mm/min)", g.Tool_diameter, g.Feedrate))
+		g.outputnl(fmt.Sprintf("(Tool diameter: %.4f mm, Feedrate: %.2f mm/min)", g.ToolDiameter, g.Feedrate))
 	}
 }
 
 func Testit() {
     g := NewCam(os.Stdout)
 
+/*
     g.Moveto(Coord{1.2, 3.4, math.NaN()})
     g.Moveby(Coord{2, 4, math.NaN()})
     g.Moveby(Coord{3, 5, math.NaN()})
@@ -944,7 +1023,7 @@ func Testit() {
     g.Pause("test it")
 
     g.Laser = false
-    g.Tool_diameter = 4
+    g.ToolDiameter = 4
     g.Doc = 1
     var args = map[string]float64 {"width": 12.0, "length": 3.4, "depth": 2, "feedrate": 1000.0}
     if err:= g.Rectangle(false, args); err != nil {
@@ -968,7 +1047,7 @@ func Testit() {
     g.Moveto(Z(0))
     g.Laser = false
     g.Doc = 0.2
-    g.Tool_diameter = 4
+    g.ToolDiameter = 4
     if err:= g.Hole(8.0, 2, 1); err != nil {
         panic(err)
     }
@@ -981,30 +1060,30 @@ func Testit() {
     }
 
     g.Moveto(XYZ(0, 0, 0))
-    g.Tool_diameter = 50
+    g.ToolDiameter = 50
     if err:= g.Milltop(100, 200, 1, 50); err != nil {
         panic(err)
     }
 
     g.Moveto(XYZ(0, 0, 0))
-    g.Tool_diameter = 12
+    g.ToolDiameter = 12
     g.Doc = 0.2
     if err:= g.Sidemill("bottom", false, 200, 0.5); err != nil {
         panic(err)
     }
 
     g.Moveto(XYZ(0, 0, 0))
-    g.Tool_diameter = 12
+    g.ToolDiameter = 12
     g.Doc = 0.2
     if err:= g.Squaring(100, 100, 10, 1, 40); err != nil {
         panic(err)
     }
-
+*/
     g.Moveto(XYZ(0, 0, 0))
-    g.Tool_diameter = 6.35 / 2.0
+    g.ToolDiameter = 3.175 * 2
     g.Preamble()
     g.Doc = 0.2
-    if err:= g.Pocket(30, 25, 1, 40); err != nil {
+    if err:= g.Pocket(40, 20, 1, 0); err != nil {
         panic(err)
     }
 
