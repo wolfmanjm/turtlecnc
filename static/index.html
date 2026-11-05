@@ -16,6 +16,7 @@
   <button class="cd-btn" data-job="rectangle">&lt; &nbsp;<span class="cd-hot">R</span>ectangle&nbsp; &gt;</button>
   <button class="cd-btn" data-job="circle">&lt; &nbsp;<span class="cd-hot">C</span>ircle&nbsp; &gt;</button>
   <button class="cd-btn" data-job="hole">&lt; &nbsp;<span class="cd-hot">H</span>ole&nbsp; &gt;</button>
+  <button class="cd-btn" data-job="surface">&lt; &nbsp;<span class="cd-hot">S</span>urface&nbsp; &gt;</button>
   <button class="cd-btn" data-job="sidemill">&lt; &nbsp;<span class="cd-hot">S</span>ide Mill&nbsp; &gt;</button>
   <button class="cd-btn" data-job="squaring">&lt; &nbsp;<span class="cd-hot">S</span>quaring&nbsp; &gt;</button>
   <button class="cd-btn" data-job="pocket">&lt; &nbsp;<span class="cd-hot">P</span>ocket&nbsp; &gt;</button>
@@ -101,15 +102,15 @@ const SPECS = {
     ]
   },
 
-  milltop: {
-    title: "Mill a surface flat",
+  surface: {
+    title: "surface a wasteboard",
     blurb: "Starts at current position and z height and mills over the given width, length to given depth",
 
     fields: [
       { name: "jobname", label: "Job name",      type: "text", value: "surface" },
       { name: "width",   label: "Width",         ...mm, value: 200 },
       { name: "length",  label: "Length",        ...mm, value: 300 },
-      { name: "depth",   label: "Depth",         ...mm, value: 1 },
+      { name: "depth",   label: "Depth",         ...mm, value: 0.2 },
       { name: "tooldia", label: "Tool diameter", ...mm, value: 50, min: 0.001 },
       { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },

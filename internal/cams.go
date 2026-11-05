@@ -549,7 +549,7 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
     fr := g.Feedrate
 
     g.outputnl(fmt.Sprintf("(Milltop %.4fx%.4f mm, depth: %.4f mm, tool: %.4f, stepover: %.2f)", w, l, depth, g.ToolDiameter, overlap))
-	g.outputnl("(MSG Position tool at front left of surface just touching it, set Z0")
+	g.outputnl("(MSG Position tool at front left of surface just touching it, set Z0)")
 
 	if g.RPM > 0.001 {
  		g.outputnl(fmt.Sprintf("M3 S%.1f", g.RPM))

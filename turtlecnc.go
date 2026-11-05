@@ -86,6 +86,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
     case "sidemill":
         log.Println(fmt.Sprintf("We got a sidemill job: %+v", v))
         sidemillJob(w, v)
+    case "surface":
+        log.Println(fmt.Sprintf("We got a surface job: %+v", v))
+        surfaceJob(w, v)
     case "squaring":
         log.Println(fmt.Sprintf("We got a squaring job: %+v", v))
         squaringJob(w, v)
@@ -212,6 +215,20 @@ func sidemillJob(w io.Writer, v values) {
 
     if err := g.Sidemill(v.Side, v.Conventional, v.Length, v.Depth); err != nil {
         fmt.Fprintf(w, "Sidemill() failed: %s", err.Error())
+    }
+}
+
+func surfaceJob(w io.Writer, v values) {
+    g := cams.NewCam(w)
+
+    g.ToolDiameter = v.Tooldia
+    g.RPM = v.RPM
+    g.Feedrate = v.Feedrate
+
+    g.Preamble()
+
+    if err := g.Milltop(v.Width, v.Length, v.Depth, v.Stepover); err != nil {
+        fmt.Fprintf(w, "Surface() failed: %s", err.Error())
     }
 }
 
