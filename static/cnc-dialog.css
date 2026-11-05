@@ -41,6 +41,11 @@
   margin: 0 -12px 0;
 }
 
+.cd-docs a,
+.cd-docs a:visited {
+  color: white;
+}
+
 .cd-statusbar {
   position: fixed;
   left: 0; right: 0; bottom: 0;

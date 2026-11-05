@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAM Jobs Reference</title>
+<style>
+:root{--bg:#f6f7f8;--fg:#1c2329;--mut:#5b6670;--line:#c9d0d6;--acc:#0b6e8a;--cut:#d4561c;--stock:#e4e9ed}
+@media (prefers-color-scheme:dark){:root{--bg:#161b1f;--fg:#e4e9ed;--mut:#9aa6b0;--line:#38424a;--acc:#5cc3dd;--cut:#ff8a55;--stock:#252d33}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 Georgia,serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 64px}
+h1,h2,h3,th{font-family:system-ui,sans-serif}
+h2{margin-top:2.4em;border-bottom:2px solid var(--line);padding-bottom:4px}
+.job{display:grid;grid-template-columns:230px 1fr;gap:20px;align-items:start}
+@media(max-width:640px){.job{grid-template-columns:1fr}}
+svg{width:100%;height:auto;border:1px solid var(--line);background:var(--bg)}
+.s{fill:var(--stock);stroke:var(--mut);stroke-width:1.5}
+.p{fill:none;stroke:var(--cut);stroke-width:1.5;stroke-dasharray:5 3}
+.r{fill:none;stroke:var(--cut);stroke-width:1.2}
+.o{fill:var(--acc)}
+text{font:10px system-ui,sans-serif;fill:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:.93em;margin:12px 0}
+th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;color:var(--acc)}
+.note{border-left:4px solid var(--cut);padding:2px 12px;margin:12px 0}
+</style></head><body><main>
+<h1>CAM Jobs Reference</h1>
+<p>Each job writes G-code for a 3-axis mill (metric, <code>G21</code>, absolute <code>G90</code>, XY plane <code>G17</code>). All sizes are in <strong>mm</strong>, feeds in <strong>mm/min</strong>. Depths are entered as positive numbers. Z0 is the top of the work surface unless a job says otherwise. In the drawings, the orange dashed line is the tool centre path and the blue dot is where you touch off.</p>
+
+<h2>Global settings</h2>
+<p>These apply to every job.</p>
+<table>
+<tr><th>Setting</th><th>Default</th><th>Meaning</th></tr>
+<tr><td>Tool diameter</td><td>3.175</td><td>Cutter diameter. Jobs use it to offset the path so the finished size is correct.</td></tr>
+<tr><td>Depth of cut (DOC)</td><td>0.2</td><td>Most Z (or sideways) material removed per pass. Must be &gt; 0.</td></tr>
+<tr><td>Feedrate</td><td>1800</td><td>Cutting feed.</td></tr>
+<tr><td>Plunge rate</td><td>100</td><td>Feed for straight plunges (Squaring and spiral Pocket).</td></tr>
+<tr><td>Safe Z</td><td>20</td><td>Height the tool retracts to between operations.</td></tr>
+<tr><td>RPM</td><td>0</td><td>If above 0, the job starts the spindle (<code>M3</code>), dwells 3 s, and stops it (<code>M5</code>) at the end. At 0 no spindle commands are written.</td></tr>
+<tr><td>Laser mode</td><td>off</td><td>Rectangle, Circle and Hole only: cuts the outline once at the feedrate, with no depth, tool offset or spindle commands.</td></tr>
+</table>
+<p><strong>Stepover</strong> (Surfacing, Squaring, Pocket) is a percentage of tool diameter. 40 means each pass moves over by 40% of the cutter diameter. If left at 0 it defaults to 40; values above 100 are treated as 100.</p>
+
+<h2>Profile rectangle</h2>
+<div class="job"><svg viewBox="0 0 200 130">
+<rect class="s" x="60" y="35" width="90" height="60"/><rect class="p" x="55" y="30" width="100" height="70"/>
+<path class="r" d="M55 100 L155 100 L155 30 L55 30 Z" stroke-width="0"/><circle class="o" cx="55" cy="100" r="4"/>
+<text x="20" y="116">start</text><text x="86" y="14">outside cut shown</text></svg>
+<div><p>Cuts the outline of a rectangle, either <strong>outside</strong> (cutting out a part) or <strong>inside</strong> (cutting a rectangular window). The path is offset by half the tool diameter so the finished rectangle is the size you entered.</p>
+<p>Position the tool over the <strong>bottom-left corner</strong> of the rectangle (X0 Y0) before running; the job shifts to the offset start itself. Path order is +X, +Y, −X, −Y (counter-clockwise from above). Each lap steps down by one DOC, ramping down along the first X edge. At full depth the first edge is cut again to clear the ramp, then the tool lifts to Safe Z and returns to the corner.</p>
+<table><tr><th>Parameter</th><th>Required</th><th>Notes</th></tr>
+<tr><td>inside</td><td>yes</td><td>true = cut inside the line, false = cut outside.</td></tr>
+<tr><td>width</td><td>yes</td><td>X size. Must be non-zero.</td></tr>
+<tr><td>length</td><td>yes</td><td>Y size. Must be non-zero.</td></tr>
+<tr><td>depth</td><td>yes (not laser)</td><td>Total depth below Z0.</td></tr></table></div></div>
+
+<h2>Profile circle</h2>
+<div class="job"><svg viewBox="0 0 200 130">
+<circle class="s" cx="100" cy="65" r="40"/><circle class="p" cx="100" cy="65" r="46"/>
+<circle class="o" cx="100" cy="65" r="4"/><circle cx="100" cy="19" r="3" fill="var(--cut)"/>
+<text x="106" y="16">start (12 o'clock)</text><text x="106" y="68">centre</text></svg>
+<div><p>Cuts a circle, inside or outside, as a ring of short straight segments. Put the tool at the <strong>centre</strong> of the circle. It moves to the 12 o'clock point on the offset path, plunges one DOC, and cuts a full clockwise lap, repeating until depth is reached. It then retracts to Safe Z and returns to the centre.</p>
+<p>Inside cuts shrink the path by half the tool diameter; outside cuts grow it. An inside circle no larger than the tool is rejected.</p>
+<table><tr><th>Parameter</th><th>Required</th><th>Notes</th></tr>
+<tr><td>inside</td><td>yes</td><td>true = inside cut (hole/pocket), false = outside (disc).</td></tr>
+<tr><td>radius or diameter</td><td>one of them</td><td>Finished circle size.</td></tr>
+<tr><td>depth</td><td>yes (not laser)</td><td>Total depth below Z0.</td></tr>
+<tr><td>segments</td><td>no</td><td>Number of straight segments. Default gives about 0.5 mm per segment; more is smoother but a longer program.</td></tr></table></div></div>
+
+<h2>Mill hole</h2>
+<div class="job"><svg viewBox="0 0 200 130">
+<circle class="s" cx="100" cy="65" r="45"/><circle class="r" cx="100" cy="65" r="8"/><circle class="r" cx="100" cy="65" r="20"/><circle class="p" cx="100" cy="65" r="32"/>
+<circle class="o" cx="100" cy="65" r="3"/><text x="150" y="68">passes widen</text></svg>
+<div><p>Mills a round hole with a <strong>helical spiral</strong> (clockwise), so a small end mill can make a larger hole. Put the tool at the <strong>centre</strong> of the hole. The tool spirals down one DOC per revolution, then does two full laps at the bottom to leave a flat floor.</p>
+<p>If the hole is more than twice the tool diameter, the job starts with a circle of the tool's own radius and widens it by one tool diameter per pass until the final size is reached. This leaves no solid plug that could break free. The tool returns to Safe Z and to the centre afterwards.</p>
+<table><tr><th>Parameter</th><th>Required</th><th>Notes</th></tr>
+<tr><td>diameter</td><td>yes</td><td>Finished hole size. Must be larger than the tool diameter.</td></tr>
+<tr><td>depth</td><td>yes (not laser)</td><td>Total depth below Z0.</td></tr>
+<tr><td>peck</td><td>no</td><td>0 = no pecking. Otherwise, after about this much depth the tool lifts to Safe Z, pauses 1 s to clear chips, and returns. A warning is written if the hole is within 1 mm of the tool size and no peck is set.</td></tr></table></div></div>
+
+<h2>Surface wasteboard (Milltop)</h2>
+<div class="job"><svg viewBox="0 0 200 130">
+<rect class="s" x="40" y="25" width="120" height="80"/>
+<path class="r" d="M40 105 V25 H160 V105 H40 M40 90 H160 M40 75 H160 M40 60 H160 M40 45 H160 M40 30 H160" style="stroke-dasharray:none"/>
+<circle class="o" cx="40" cy="105" r="4"/><text x="8" y="120">touch off</text></svg>
+<div><p>Skims a flat rectangle, typically with a large surfacing cutter on a wasteboard. Touch the tool to the surface at the <strong>front-left corner</strong> and set Z0 there (the job pauses with that message). The tool centre travels the full width × length, so the cutter overhangs the edges by half its diameter.</p>
+<p>The job plunges to the full depth <strong>in one move</strong> (the DOC setting is not used), cuts the perimeter, then rasters back and forth along X, stepping up Y each row. Keep the depth light.</p>
+<table><tr><th>Parameter</th><th>Required</th><th>Notes</th></tr>
+<tr><td>width</td><td>yes</td><td>X travel of the tool centre.</td></tr>
+<tr><td>length</td><td>yes</td><td>Y travel of the tool centre.</td></tr>
+<tr><td>depth</td><td>yes</td><td>Material removed, in one pass.</td></tr>
+<tr><td>stepover</td><td>no</td><td>% of tool diameter between rows. Default 40.</td></tr></table></div></div>
+
+<h2>Side mill an edge</h2>
+<div class="job"><svg viewBox="0 0 200 130">
+<rect class="s" x="40" y="20" width="120" height="70"/>
+<path class="p" d="M165 99 H35"/><path d="M45 94 l-9 5 l9 5 z" fill="var(--cut)"/>
+<circle class="o" cx="165" cy="99" r="4"/><text x="60" y="118">bottom edge, climb: start right</text></svg>
+<div><p>Trims material off one edge of the stock with the side of the cutter, in light passes. You set the cutter height by hand; <strong>Z does not move</strong>. Each pass steps the cutter <em>sideways into the edge</em> by one DOC, skims along the edge, backs off, rapids back to the start, and returns to the edge for the next pass. The skim runs one tool diameter longer than the length so it clears the end.</p>
+<p>The job pauses and tells you which corner to start from. Touch the cutter to the edge there. All moves are relative to that start point.</p>
+<table><tr><th>Edge</th><th>Climb starts</th><th>Conventional starts</th></tr>
+<tr><td>bottom</td><td>right</td><td>left</td></tr><tr><td>top</td><td>left</td><td>right</td></tr>
+<tr><td>left</td><td>bottom</td><td>top</td></tr><tr><td>right</td><td>top</td><td>bottom</td></tr></table>
+<table><tr><th>Parameter</th><th>Required</th><th>Notes</th></tr>
+<tr><td>edge</td><td>yes</td><td>top, bottom, left or right.</td></tr>
+<tr><td>conventional</td><td>yes</td><td>true = conventional, false = climb.</td></tr>
+<tr><td>length</td><td>yes</td><td>Length of edge to skim.</td></tr>
+<tr><td>depth</td><td>yes</td><td>Total material to remove from the edge (sideways, not Z).</td></tr></table></div></div>
+
+<h2>Square stock</h2>
+<div class="job"><svg viewBox="0 0 200 130">
+<rect class="s" x="55" y="30" width="90" height="70"/>
+<path class="r" d="M30 33 H170 M170 97 H30 M30 45 H170 M170 85 H30 M30 57 H170 M170 73 H30" style="stroke-dasharray:none"/>
+<rect class="p" x="52" y="27" width="96" height="76" style="stroke-dasharray:2 2"/>
+<circle class="o" cx="55" cy="100" r="4"/><text x="12" y="118">X0 Y0, Z0 on top</text></svg>
+<div><p>Faces the top of a block and optionally trims its sides, using the clockwise climb-milling method from Joe Pie's YouTube videos. Touch off at the <strong>bottom-left corner of the stock</strong>, with Z0 on the top face, and set XY to zero.</p>
+<p>The tool starts left of the stock at the top edge and cuts a row to the right, rapids (outside the stock) to the bottom edge, and cuts a row back left. Rows then work toward the middle from both sides. If a final depth is given, the pattern repeats one DOC lower until that depth is reached; with no final depth, one DOC is skimmed. The first plunge uses the plunge rate.</p>
+<p>If a side height is given, the tool then circles the stock clockwise at that depth and trims the perimeter. The width of cut is one DOC. It approaches from the bottom-left to take up backlash.</p>
+<table><tr><th>Parameter</th><th>Required</th><th>Notes</th></tr>
+<tr><td>width</td><td>yes</td><td>Actual X size of the stock.</td></tr>
+<tr><td>length</td><td>yes</td><td>Actual Y size of the stock.</td></tr>
+<tr><td>height</td><td>no</td><td>Depth below Z0 to side-mill the perimeter. 0 = skip the sides.</td></tr>
+<tr><td>depth</td><td>no</td><td>Final depth for facing. 0 = one DOC only.</td></tr>
+<tr><td>stepover</td><td>no</td><td>% of tool diameter between rows. Default 40.</td></tr></table></div></div>
+
+<h2>Pocket</h2>
+<div class="job"><svg viewBox="0 0 200 130">
+<rect class="s" x="35" y="25" width="130" height="80"/>
+<path class="r" d="M100 65 v-6 h8 v14 h-18 v-22 h30 v30 h-42 v-38 h54 v46 h-66 v-54 h78 v62 h-90 v-70 h102" style="stroke-dasharray:none"/>
+<circle class="o" cx="35" cy="105" r="4"/><text x="8" y="120">touch off</text><text x="120" y="16">spiral shown</text></svg>
+<div><p>Clears a rectangular pocket to depth. Touch off at the <strong>bottom-left corner of the pocket</strong> with Z0 on the surface. Two strategies:</p>
+<p><strong>Spiral</strong> starts at the centre of the pocket and spirals outward, then finishes with one lap of the outline. Each level plunges at the plunge rate. <strong>Parallel</strong> starts at the corner, ramps into the outline, then cuts concentric rectangles inward. It finishes with a lap of the outline at full depth. Both go down one DOC per level and return to Safe Z and X0 Y0 at the end.</p>
+<table><tr><th>Parameter</th><th>Required</th><th>Notes</th></tr>
+<tr><td>spiral</td><td>yes</td><td>true = spiral out from centre, false = parallel rings from the outside in.</td></tr>
+<tr><td>width</td><td>yes</td><td>X size. Must be larger than the tool diameter.</td></tr>
+<tr><td>length</td><td>yes</td><td>Y size. Must be larger than the tool diameter.</td></tr>
+<tr><td>depth</td><td>yes</td><td>Total depth below Z0.</td></tr>
+<tr><td>stepover</td><td>no</td><td>% of tool diameter between passes. Default 40.</td></tr></table></div></div>
+<div class="note">Always air-cut or simulate a new program before cutting, and check the touch-off instructions the program prints (<code>MSG</code> lines pause the machine with <code>M0</code>).</div>
+</main></body></html>
