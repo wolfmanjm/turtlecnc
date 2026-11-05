@@ -847,8 +847,8 @@ func (g *camvars) Pocket(spiral bool, width, length, depth, stepover float64) er
     }
 
     var overlap float64
-    if stepover >= 0 {
-    	overlap = (100.0-stepover)/100.0
+    if stepover > 0 {
+    	overlap = stepover/100.0
     	if overlap <= 0 {
     		overlap = 0.1
     	} else if overlap > 1 {
@@ -914,9 +914,6 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 	x := width/2
 	y := length/2
 
-	// start at center of stock
-	g.Cutto(Z(0))
-
 	for z > -depth {
 		z -= doc
 		if z < -depth {
@@ -924,8 +921,11 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 			z = -depth
 		}
 
+		g.Moveto(Z(1))
+		// start at center of stock
 		g.Moveto(XY(x, y))
 		// move into stock by DoC
+		g.Moveto(Z(0))
 		g.Cutby(Z(z))
 
 		dx := deltax
@@ -1091,7 +1091,7 @@ func Testit() {
     g.ToolDiameter = 3.175
     g.Preamble()
     g.Doc = 0.2
-    if err:= g.Pocket(true, 40, 40, 1, 40.0); err != nil {
+    if err:= g.Pocket(true, 80, 40, 1, 80.0); err != nil {
         panic(err)
     }
 
