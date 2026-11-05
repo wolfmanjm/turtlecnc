@@ -184,7 +184,7 @@ func (g *camvars) Rectangle(inside bool, args map[string]float64) error {
         }
         depth = -depth
 
-        g.outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, inside: %v, depth: %.4f mm, doc: %.4f, tool: %.4f)", w, l, inside, -depth, doc, g.ToolDiameter))
+        g.outputnl(fmt.Sprintf("(Rectangle: %.4fx%.4f mm, inside: %v, depth: %.4f mm, doc: %.4f)", w, l, inside, -depth, doc))
 
         // shrink rectangle if inside cut or expand if outside cut
 
@@ -845,6 +845,10 @@ func (g *camvars) Pocket(spiral bool, width, length, depth, stepover float64) er
    	if width == 0 || length == 0 || depth == 0 {
         return fmt.Errorf("width, length, depth required")
     }
+
+	if width <= g.ToolDiameter || length <= g.ToolDiameter {
+		return fmt.Errorf("width or height cannot be less than tool diameter")
+	}
 
     var overlap float64
     if stepover > 0 {

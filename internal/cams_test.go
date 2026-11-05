@@ -96,7 +96,7 @@ func TestRectangle(t *testing.T) {
     tests := []testfixture1 {
     	{	testfixturecommon{"rectangle_mill", "rectangle1.txt",
     		map[string]float64{"width": 12.0, "length": 3.4, "depth": 2, "feedrate": 1000.0},
-    		`{"laser":false,"tool_diameter":4.0,"doc":1.0}` },
+    		`{"laser":false,"tooldiameter":4.0,"doc":1.0}` },
     		false},
 
     	{	testfixturecommon{"rectangle_laser", "rectangle2.txt",
@@ -106,7 +106,7 @@ func TestRectangle(t *testing.T) {
 
 	   	{	testfixturecommon{"rectangle_inside", "rectangle3.txt",
 	    		map[string]float64{"width": 100.0, "length": 100.0, "depth": 1.0},
-	    		`{"tool_diameter":6.35,"doc":0.2}` },
+	    		`{"tooldiameter":6.35,"doc":0.2}` },
 	    		true},
 	}
 
@@ -140,12 +140,12 @@ func TestHole(t *testing.T) {
    tests := []testfixture1 {
     	{	testfixturecommon{"hole_peck", "hole1.txt",
     		map[string]float64{"diameter": 7.0, "depth": 2, "peck": 1.0},
-    		`{"tool_diameter":4.0,"doc":0.2}` },
+    		`{"tooldiameter":4.0,"doc":0.2}` },
     		false},
 
     	{	testfixturecommon{"hole_nopeck", "hole2.txt",
     		map[string]float64{"diameter": 7.0, "depth": 2, "peck": 0.0},
-    		`{"tool_diameter":4.0,"doc":0.2}` },
+    		`{"tooldiameter":4.0,"doc":0.2}` },
     		false},
 
     	{	testfixturecommon{"hole_laser", "hole3.txt",
@@ -155,12 +155,12 @@ func TestHole(t *testing.T) {
 
     	{	testfixturecommon{"hole_big", "hole4.txt",
     		map[string]float64{"diameter": 10.0, "depth": 2, "peck": 0.0},
-    		`{"tool_diameter":4.0,"doc":0.2}` },
+    		`{"tooldiameter":4.0,"doc":0.2}` },
     		false},
 
     	{	testfixturecommon{"hole_bigger", "hole5.txt",
     		map[string]float64{"diameter": 20.0, "depth": 2, "peck": 0.0},
-    		`{"tool_diameter":4.0,"doc":0.2}` },
+    		`{"tooldiameter":4.0,"doc":0.2}` },
     		false},
 	}
 
@@ -201,31 +201,31 @@ func TestSideMill(t *testing.T) {
     	{	name: "sidemill-bottom",
     		resultfile: "sidemill1.txt",
     		args: map[string]float64{"length": 200.0, "depth": 0.5},
-    		settings: `{"tool_diameter":12.0,"doc":0.2}`,
+    		settings: `{"tooldiameter":12.0,"doc":0.2}`,
     		conventional: false,
     		edge: "bottom"},
 
     	{	testfixturecommon{"sidemill-bottom-conventional", "sidemill2.txt",
     		map[string]float64{"length": 200.0, "depth": 0.5},
-    		`{"tool_diameter":12.0,"doc":0.2}` },
+    		`{"tooldiameter":12.0,"doc":0.2}` },
     		true,
     		"bottom"},
 
     	{	testfixturecommon{"sidemill-top", "sidemill3.txt",
     		map[string]float64{"length": 100.0, "depth": 0.2},
-    		`{"tool_diameter":12.0,"doc":0.1}` },
+    		`{"tooldiameter":12.0,"doc":0.1}` },
     		false,
     		"top"},
 
     	{	testfixturecommon{"sidemill-left", "sidemill4.txt",
     		map[string]float64{"length": 200.0, "depth": 0.5},
-    		`{"tool_diameter":12.0,"doc":0.2}` },
+    		`{"tooldiameter":12.0,"doc":0.2}` },
     		false,
     		"left"},
 
     	{	testfixturecommon{"sidemill-right", "sidemill5.txt",
     		map[string]float64{"length": 200.0, "depth": 0.5},
-    		`{"tool_diameter":12.0,"doc":0.2}` },
+    		`{"tooldiameter":12.0,"doc":0.2}` },
     		false,
     		"right"},
 	}

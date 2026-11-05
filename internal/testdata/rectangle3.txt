@@ -1,4 +1,4 @@
-(Rectangle: 100.0000x100.0000 mm, inside: true, depth: 1.0000 mm, doc: 0.2000, tool: 6.3500)
+(Rectangle: 100.0000x100.0000 mm, inside: true, depth: 1.0000 mm, doc: 0.2000)
 G91
 G0 X3.1750 Y3.1750
 G1 F1800.0
