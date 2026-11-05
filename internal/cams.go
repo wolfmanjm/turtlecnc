@@ -536,7 +536,12 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
  func (g *camvars) Milltop(w, l, depth, stepover float64) error {
  	var overlap float64
     if stepover > 0 {
-    	overlap = (100.0-stepover)/100.0
+    	overlap = stepover/100.0
+    	if overlap <= 0 {
+    		overlap = 0.1
+    	} else if overlap > 1 {
+    		overlap = 1
+    	}
     } else {
     	overlap = 0.4
     }
@@ -728,7 +733,13 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
 
     var overlap float64
     if stepover > 0 {
-    	overlap = (100.0-stepover)/100.0
+    	overlap = stepover/100.0
+    	if overlap <= 0 {
+    		overlap = 0.1
+    	} else if overlap > 1 {
+    		overlap = 1
+    	}
+
     } else {
     	overlap = 0.4
     }
@@ -760,9 +771,16 @@ func (g *camvars) Squaring(w, l, height, depth, stepover float64) error {
 
     // move to required starting position
     g.Moveto(XY(xs, y1))
-    // move to first cutting depth
-    g.SetFeedrate(fr) // maybe should be plunge feed rate
+
+    // move to first cutting depth, using plungerate if set
+    if g.PlungeRate > 0 {
+    	g.SetFeedrate(g.PlungeRate)
+    } else {
+    	g.SetFeedrate(fr)
+    }
     g.Cutto(Z(-doc))
+
+    g.SetFeedrate(fr)
 
     g.outputnl("(first top skim pass)")
     for {

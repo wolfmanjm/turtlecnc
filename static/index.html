@@ -113,6 +113,7 @@ const SPECS = {
       { name: "tooldia", label: "Tool diameter", ...mm, value: 50, min: 0.001 },
       { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
+      { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
     ]
   },
 
@@ -129,6 +130,7 @@ const SPECS = {
       { name: "depth",   label: "Depth",         ...mm, value: 0 },
       { name: "tooldia", label: "Tool diameter", ...mm, value: 12, min: 0.001 },
       { name: "feedrate",label: "Feedrate",      type: "number", value: 1400, unit: "mm/min"},
+      { name: "plungerate",label: "Plungerate",  type: "number", value: 100, unit: "mm/min"},
       { name: "stepover", label: "Stepover", type: "number", step: 1, min: 1, max: 100, value: 40, unit: "%" },
       { name: "rpm",     label: "Spindle",       type: "number", value: 0, unit: "RPM"},
     ]

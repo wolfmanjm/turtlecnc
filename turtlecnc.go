@@ -222,6 +222,7 @@ func squaringJob(w http.ResponseWriter, v values) {
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
+    g.PlungeRate = v.PlungeRate
 
     g.Preamble()
 
