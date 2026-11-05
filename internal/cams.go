@@ -862,9 +862,7 @@ func (g *camvars) Pocket(spiral bool, width, length, depth, stepover float64) er
     	overlap = 0.4
     }
 
-    doc := g.Doc
-
-	g.outputnl(fmt.Sprintf("(Pocket: %.4fx%.4fx%.4f mm, doc: %.4f mm)", width, length, depth, doc))
+	g.outputnl(fmt.Sprintf("(Pocket: %.4fx%.4fx%.4f mm, doc: %.4f mm)", width, length, depth, g.Doc))
 	g.outputnl("(MSG Touch off bottom left corner of pocket and surface)")
 
     delta := g.ToolDiameter * overlap
@@ -879,9 +877,9 @@ func (g *camvars) Pocket(spiral bool, width, length, depth, stepover float64) er
  	}
 
  	if spiral {
-    	pocketSpiral(g, depth, width, length, doc, delta)
+    	g.pocketSpiral(depth, width, length, delta)
  	} else {
-    	pocketParallel(g, depth, width, length, doc, delta)
+    	g.pocketParallel(depth, width, length, delta)
     }
 
 
@@ -897,7 +895,7 @@ func (g *camvars) Pocket(spiral bool, width, length, depth, stepover float64) er
 }
 
 // cuts a pocket using spiral cuts increasing in size, starting from inner to outer
-func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc float64, delta float64) {
+func (g *camvars) pocketSpiral(depth float64, width float64, length float64, delta float64) {
 
 	var deltax, deltay float64
 	var iter int
@@ -914,6 +912,7 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 		iter = int(math.Floor(i))
 	}
 
+	doc := g.Doc
 	z := 0.0
 	x := width/2
 	y := length/2
@@ -964,15 +963,15 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 		g.Cutto(X(g.ToolDiameter/2))
 		g.Cutto(Y(length - g.ToolDiameter/2))
 		g.Cutto(X(x))
-
 	}
-
 }
 
 // cuts a pocket using parallel rectangles decreasing in size, starting from outer to inner
-func pocketParallel(g *camvars, depth float64, width float64, length float64, doc float64, delta float64) {
+func (g *camvars) pocketParallel(depth float64, width float64, length float64, delta float64) {
 	g.Moveto(XY(g.ToolDiameter/2, g.ToolDiameter/2))
 	g.Moveto(Z(0))
+	doc := g.Doc
+
 	var w, l, z float64
 	z = 0.0
 	// start at corner of the pocket and work inwards
