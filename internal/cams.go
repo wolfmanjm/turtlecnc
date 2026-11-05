@@ -12,12 +12,12 @@ type camvars struct {
 	ToolDiameter  float64
 	Doc           float64
 	Feedrate      float64
-	Plunge_rate   float64
+	PlungeRate    float64
 	RPM 		  float64
 	Laser         bool
 	Lathe         bool
 	abs_state	  bool
-	output_port   io.Writer
+	outputPort   io.Writer
 }
 
 func NewCam(out io.Writer) *camvars {
@@ -27,13 +27,13 @@ func NewCam(out io.Writer) *camvars {
     g.Laser = false
     g.Lathe = false
     g.Feedrate = 1800
-    g.Plunge_rate = 0
+    g.PlungeRate = 100
     g.Safe_z = 20
     g.ToolDiameter = 3.175
     g.Doc = 0.2
     g.RPM = 0
 	g.abs_state = true
-	g.output_port = out
+	g.outputPort = out
 
 	return &g
 }
@@ -68,7 +68,7 @@ func YZ(y, z float64) Coord {
 // output to specified port
 func (g camvars) output(s ...string) {
     for _, o := range s {
-        fmt.Fprint(g.output_port, o)
+        fmt.Fprint(g.outputPort, o)
     }
 }
 
@@ -928,9 +928,11 @@ func pocketSpiral(g *camvars, depth float64, width float64, length float64, doc 
 		g.Moveto(Z(1))
 		// start at center of stock
 		g.Moveto(XY(x, y))
-		// move into stock by DoC
 		g.Moveto(Z(0))
+		// move into stock by DoC
+		if g.PlungeRate > 0 { g.SetFeedrate(g.PlungeRate) }
 		g.Cutby(Z(z))
+		if g.PlungeRate > 0 { g.SetFeedrate(g.Feedrate) }
 
 		dx := deltax
 		dy := deltay

@@ -45,6 +45,7 @@ type values struct {
     Tooldia float64
     Peck float64
     Feedrate float64
+    PlungeRate float64
     Stepover float64
     Laser bool
     Conventional bool
@@ -237,7 +238,7 @@ func pocketJob(w http.ResponseWriter, v values) {
     g.Doc = v.Doc
     g.RPM = v.RPM
     g.Feedrate = v.Feedrate
-
+    g.PlungeRate = v.PlungeRate
     g.Preamble()
 
     if err := g.Pocket(v.Spiral, v.Width, v.Length, v.Depth, v.Stepover); err != nil {
