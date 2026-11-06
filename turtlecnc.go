@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	cams "github.com/wolfmanjm/turtlecnc/internal"
+	tui "github.com/wolfmanjm/turtlecnc/tui"
 )
 
 func main() {
@@ -18,6 +19,7 @@ func main() {
     debug := flag.Bool("t", false, "debug test")
     server := flag.Bool("s", false, "start server")
     port := flag.Int("port", 8080, "Set server listen port")
+    runTui := flag.Bool("tui", false, "run tui interface")
 
     flag.Parse()
 
@@ -25,6 +27,8 @@ func main() {
 	   cams.Testit()
     } else if *server {
         runServer(*port)
+    } else if *runTui {
+    	tui.RunTui()
     } else {
         flag.PrintDefaults()
     }
