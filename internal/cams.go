@@ -294,7 +294,7 @@ func (g *camvars) Circle(inside bool, args map[string]float64) error {
     fr := g.Feedrate
 
     if g.Laser {
-        g.outputnl(fmt.Sprintf("(Circle: radius %.4f mm, segments %v for laser)", radius, segments))
+        g.outputnl(fmt.Sprintf("(Circle: diameter %.4f mm, segments %v for laser)", radius*2, segments))
         pa := _circle(radius, segments)
         g.SetFeedrate(fr)
         // We are starting at the center of the circle so need to move to the edge to start
@@ -534,6 +534,10 @@ func (g *camvars) Hole(diameter, depth, peck float64) error {
 }
 
  func (g *camvars) Milltop(w, l, depth, stepover float64) error {
+   	if w == 0 || l == 0 || depth == 0 {
+        return fmt.Errorf("width, length, depth required")
+    }
+
  	var overlap float64
     if stepover > 0 {
     	overlap = stepover/100.0
