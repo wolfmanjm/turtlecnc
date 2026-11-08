@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	cams "github.com/wolfmanjm/turtlecnc/internal"
 )
@@ -39,6 +40,14 @@ var Debug bool
 func RunTui() {
 	app = tview.NewApplication()
 	pages = tview.NewPages()
+
+	// escape at any time will always exit
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEsc {
+			app.Stop()
+		}
+		return event
+	})
 
 	items := []string {
 		"Hole", "Spiral cut hole",
@@ -115,7 +124,7 @@ func makeForm(title string) (*tview.Form, int) {
 	form.AddButton("OK", func() {
 		err := handleResults(title, form)
 		if err != nil {
-			showMessage(fmt.Sprintf("Error: %s", err.Error()))
+			showMessage(fmt.Sprintf("Error: %s", err.Error()), "form")
 		} else {
 			if Debug {
 				// for debug to see the output
@@ -125,15 +134,58 @@ func makeForm(title string) (*tview.Form, int) {
 	    			var input string
 	    			fmt.Scanln(&input)
 				})
+				showMessage("Job Done OK", "list")
+			} else {
+				fn := form.GetFormItemByLabel("Job name").(*tview.InputField).GetText()
+				showMessage(fmt.Sprintf("Job OK saved to: %s.nc", fn), "list")
 			}
-			pages.SwitchToPage("list")
 		}
+	} )
+	form.AddButton("Help", func() {
+		showHelp(title)
 	} )
 	form.AddButton("Quit", func() { app.Stop() } )
 	form.SetCancelFunc(func() { app.Stop() } )
 	form.SetFocus(0)
-
+	/*
+	// add extra navigation keys
+	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyDown {
+			f, _ := form.GetFocusedItemIndex()
+			if f >= 0 {
+				form.SetFocus(f+1)
+			}
+		} else if event.Key() == tcell.KeyUp {
+			f, _ := form.GetFocusedItemIndex()
+			if f > 0 {
+				form.SetFocus(f-1)
+			}
+		}
+		return event
+	})
+	*/
 	return form, len(fields)
+}
+
+func showHelp(title string) {
+	j, ok := Jobs[title]
+	if !ok { return }
+	helptext := j.blurb
+	if helptext == "" { return }
+
+	tv := tview.NewTextView()
+	tv.SetBorder(true)
+	//tv.SetLabel("Help For job " + title)
+	tv.SetDynamicColors(true).
+		SetWordWrap(true).
+		SetText(helptext + "\n[yellow]Press Enter to Continue\n").
+		SetDoneFunc(func(key tcell.Key) {
+			pages.RemovePage("help")
+			pages.SwitchToPage("form")
+		})
+	width := 70
+	nlines := len(helptext) / width
+	pages.AddAndSwitchToPage("help", center(tv, width, nlines + 5), true)
 }
 
 // a structure containing all possible values from the form
@@ -226,7 +278,7 @@ func isNumber(s string) bool {
 }
 
 // popup message box
-func showMessage(results string) {
+func showMessage(results, page string) {
 	modal := tview.NewModal()
 	modal.SetText(results).
 		AddButtons([]string{"Continue", "Quit"}).
@@ -235,7 +287,11 @@ func showMessage(results string) {
 				app.Stop()
 			} else {
 				pages.RemovePage("info")
-				pages.SwitchToPage("list")
+				if page == "" {
+					app.Stop()
+				} else {
+					pages.SwitchToPage(page)
+				}
 			}
 		})
 	pages.AddAndSwitchToPage("info", modal, true)
@@ -259,7 +315,7 @@ func handleJob(kind string, v values) error {
 	   	w = fw
 	}
 
-	var err error
+	var err error = nil
     // handle each job kind
     switch kind {
     case "Rectangle":
@@ -316,7 +372,6 @@ func holeJob(w io.Writer, v values) error {
 }
 
 func rectangleJob(w io.Writer, v values) error {
-	// depth:6 doc:1.5 feedrate:1400 jobname:rectangle length:150 rpm:10000 side:laser tooldia:6.35 width:100
 	g := cams.NewCam(w)
 
 	g.Laser = false
@@ -350,7 +405,6 @@ func rectangleJob(w io.Writer, v values) error {
 }
 
 func circleJob(w io.Writer, v values) error {
-	// depth:6 doc:1.5 feedrate:1400 jobname:rectangle length:150 rpm:10000 side:laser tooldia:6.35 width:100
 	g := cams.NewCam(w)
 
 	g.Laser = false
@@ -384,7 +438,6 @@ func circleJob(w io.Writer, v values) error {
 }
 
 func sidemillJob(w io.Writer, v values) error {
-	// {Kind:sidemill Jobname:surface Length:300 Width:0 Diameter:0 Depth:1 RPM:0 Side: Tooldia:12 Doc:0.5 Peck:0 Feedrate:1400 Laser:false}
 	g := cams.NewCam(w)
 
 	g.ToolDiameter = v.Tooldia
