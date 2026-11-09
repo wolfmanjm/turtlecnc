@@ -97,7 +97,7 @@ var Jobs = map[string]JobStruct{
 		[]JobField{
 			{"Job name", "sidemill", "Set filename to this (.nc)"},
 			{"Length", "", "(y) in mm"},
-			{"Depth", "", "(-z) in mm"},
+			{"Depth", "", "amount to cut off side in mm"},
 			{"Depth of cut", "0.5", "in mm per pass"},
 			{"Tool diameter", "12", "in mm"},
 			{"Feedrate", "1400", "cutting feedrate in mm/min"},

@@ -16,9 +16,9 @@ import (
 const (
 	listWidth = 30
 	formWidth = 44
-	// 6 fields + 5 gaps between them + 1 gap + 1 button row,
+	// 1 gap + 1 button row,
 	// plus the form's 1-row top and bottom padding.
-	formHeight = 6 + 5 + 1 + 1 + 2
+	formHeight = 1 + 1 + 2
 )
 
 // center wraps a primitive in flex spacers so it sits in the middle of the
@@ -73,7 +73,7 @@ func RunTui() {
 	list.SetSelectedFunc(func(_ int, name, _ string, _ rune) {
 		if name != "Quit" {
 			form, nitems := makeForm(name)
-			pages.AddAndSwitchToPage("form", center(form, formWidth+2, nitems+formHeight+2), true)
+			pages.AddAndSwitchToPage("form", center(form, formWidth+2, nitems*2+formHeight+1), true)
 		}
 	})
 
@@ -141,15 +141,16 @@ func makeForm(title string) (*tview.Form, int) {
 			}
 		}
 	} )
-	form.AddButton("Help", func() {
-		showHelp(title)
-	} )
+	form.AddButton("Help", func() { showHelp(title) } )
 	form.AddButton("Quit", func() { app.Stop() } )
 	form.SetCancelFunc(func() { app.Stop() } )
 	form.SetFocus(0)
-	/*
 	// add extra navigation keys
 	form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == '?' {
+			showHelp(title)
+		}
+	/*
 		if event.Key() == tcell.KeyDown {
 			f, _ := form.GetFocusedItemIndex()
 			if f >= 0 {
@@ -161,9 +162,9 @@ func makeForm(title string) (*tview.Form, int) {
 				form.SetFocus(f-1)
 			}
 		}
+	*/
 		return event
 	})
-	*/
 	return form, len(fields)
 }
 
