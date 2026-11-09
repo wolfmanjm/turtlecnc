@@ -182,6 +182,7 @@ func showHelp(title string) {
 		helptext.WriteString(fmt.Sprintf("  [blue]%s[white] %s\n", v.label, v.unit))
 		nlines++
 	}
+	helptext.WriteString("\n[green]TAB/ShiftTAB no navigate fields, Enter to set data\n")
 	helptext.WriteString("\n[yellow]Press Enter to Continue")
 
 	tv := tview.NewTextView()
@@ -197,7 +198,7 @@ func showHelp(title string) {
 
 	width := 70
 	nlines += len(j.blurb) / width
-	pages.AddAndSwitchToPage("help", center(tv, width, nlines + 8), true)
+	pages.AddAndSwitchToPage("help", center(tv, width, nlines + 9), true)
 }
 
 // a structure containing all possible values from the form
