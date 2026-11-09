@@ -68,7 +68,7 @@ var Jobs = map[string]JobStruct{
 			{"Depth of cut", "0.2", "in mm per pass"},
 			{"Feedrate", "1400", "cutting feedrate in mm/min"},
 			{"Spindle", "", "If specified turn on spindle at RPM"},
-			{"Segments", "0", "number of segments in circle, leave at 0 for auto"},
+			{"Segments", "0", "number of segments in circle, 0 for auto, 6 for hex"},
 			{"Side", "inside|outside|laser", "Select which side the cut is on (laser will be on the line)"},
 		},
 	},
