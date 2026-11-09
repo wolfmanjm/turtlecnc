@@ -33,4 +33,6 @@ To run the web server at port 8080 (the default)
 then connect to the server with a web browser (eg http://localhost:8080). A
 similar list of jobs and forms will be displayed.
 
+A server running this is available at https://cam.wolfman.com
 
+Full documentation for each job is available at https://cam.wolfman.com/documentation.html
