@@ -217,6 +217,7 @@ type values struct {
     Feedrate float64
     PlungeRate float64
     Stepover float64
+    Segments float64
     Laser bool
     Conventional bool
     Spiral bool
@@ -443,7 +444,7 @@ func circleJob(w io.Writer, v values) error {
 	var args = map[string]float64{
 		"diameter": v.Diameter,
 		"depth":    v.Depth,
-		"segments": v.Stepover,
+		"segments": v.Segments,
 	}
 
 	return g.Circle(inside, args)
