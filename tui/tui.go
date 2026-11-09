@@ -106,7 +106,7 @@ func makeForm(title string) (*tview.Form, int) {
 	for i := range fields {
 		k := fields[i].label
 		v := fields[i].value
-		if fields[i].unit == "dropdown" {
+		if strings.Contains(v, "|") {
 			options := strings.Split(v, "|")
 			form.AddDropDown(k, options, 0, nil)
 		} else if v == "true" || v == "false" {
@@ -168,24 +168,35 @@ func makeForm(title string) (*tview.Form, int) {
 }
 
 func showHelp(title string) {
+	var helptext strings.Builder
 	j, ok := Jobs[title]
-	if !ok { return }
-	helptext := j.blurb
-	if helptext == "" { return }
+	if !ok || j.blurb == "" {
+		helptext.WriteString("No help found")
+	} else {
+		helptext.WriteString(j.blurb)
+	}
+	helptext.WriteString("\n\nEntries:\n")
+	var nlines int
+	for _, v := range j.fields {
+		helptext.WriteString(fmt.Sprintf("  [blue]%s[white] %s\n", v.label, v.unit))
+		nlines++
+	}
+	helptext.WriteString("\n[yellow]Press Enter to Continue")
 
 	tv := tview.NewTextView()
 	tv.SetBorder(true)
 	//tv.SetLabel("Help For job " + title)
 	tv.SetDynamicColors(true).
 		SetWordWrap(true).
-		SetText(helptext + "\n[yellow]Press Enter to Continue\n").
+		SetText(helptext.String()).
 		SetDoneFunc(func(key tcell.Key) {
 			pages.RemovePage("help")
 			pages.SwitchToPage("form")
 		})
+
 	width := 70
-	nlines := len(helptext) / width
-	pages.AddAndSwitchToPage("help", center(tv, width, nlines + 5), true)
+	nlines += len(j.blurb) / width
+	pages.AddAndSwitchToPage("help", center(tv, width, nlines + 8), true)
 }
 
 // a structure containing all possible values from the form
