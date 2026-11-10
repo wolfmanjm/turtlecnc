@@ -15,7 +15,7 @@ type JobStruct struct {
 var Jobs = map[string]JobStruct{
 	"Surface": {
 		"surface a wasteboard",
-		"Starts at current position and z height and mills over the given width, length to given depth",
+		"Starts at current position (which should be front left of surface) and z height and mills over the given width, length to given depth",
 		[]JobField{
 			{"Job name", "surface", "Set filename to this (.nc)"},
 			{"Width", "", "(x) in mm"},
@@ -75,7 +75,7 @@ var Jobs = map[string]JobStruct{
 
 	"Squaring": {
 		"Square some stock",
-		"Square up stock given width and length does top surface, given height will also do sides using a sidecut. depth is final depth of top surface, leave at 0 to just skim by DOC",
+		"Square up stock given width and length does top surface, given height will also do sides using a sidecut. depth is final depth of top surface, leave at 0 to just skim by DOC. WCS X0 Y0 needs to be set at front left corner.",
 		[]JobField{
 			{"Job name", "squaring", "Set filename to this (.nc)"},
 			{"Width", "", "(x) in mm"},
@@ -109,7 +109,7 @@ var Jobs = map[string]JobStruct{
 
 	"Pocket": {
 		"Cut a pocket into some stock",
-		"Cut a rectangular pocket into the top of stock",
+		"Cut a rectangular pocket into the top of stock. WCS X0 Y0 needs to be set at front left corner of the pocket",
 		[]JobField{
 			{"Job name", "pocket", "Set filename to this (.nc)"},
 			{"Width", "", "(x) in mm"},
