@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	cams "github.com/wolfmanjm/turtlecnc/internal"
@@ -86,6 +87,48 @@ func RunTui() {
 	}
 }
 
+// read a defaults.toml file in the current directory
+// contains overrides for default values
+func readDefaults() map[string] map[string]string {
+	var defs map[string] map[string]string
+
+	f := "defaults.toml"
+	if _, err := os.Stat(f); err != nil {
+		return nil
+	}
+
+	_, err := toml.DecodeFile(f, &defs)
+	if err != nil {
+		panic(err)
+	}
+
+	return defs
+}
+
+func checkDefaults(defs map[string] map[string]string, title string, k string, v string) string {
+	// if there is a defaults override file update the default values for the given key
+	if defs != nil {
+		// check for global overrides
+		o, ok := defs["global"]
+		if ok {
+			oo, ok := o[k]
+			if ok {
+				v = oo
+			}
+		}
+		// check for job specific overrides
+		o, ok = defs[title]
+		if ok {
+			oo, ok := o[k]
+			if ok {
+				v = oo
+			}
+		}
+	}
+
+	return v
+}
+
 func makeForm(title string) (*tview.Form, int) {
 	form := tview.NewForm()
 	form.SetBorder(true)
@@ -98,14 +141,15 @@ func makeForm(title string) (*tview.Form, int) {
 	}
 	form.SetTitle(job.title)
 
-	//form.AddTextView("", job.blurb, 0, 0, false, false)
-
 	fields := job.fields
+	defs := readDefaults()
 
 	maxWidth := 0
-	for i := range fields {
-		k := fields[i].label
-		v := fields[i].value
+	for _, f := range fields {
+		k := f.label
+		// we may have custom overrides for the default values
+		v := checkDefaults(defs, title, k, f.value)
+
 		if strings.Contains(v, "|") {
 			options := strings.Split(v, "|")
 			form.AddDropDown(k, options, 0, nil)

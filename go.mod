@@ -3,6 +3,7 @@ module github.com/wolfmanjm/turtlecnc
 go 1.27.1
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/ScriptRock/dialog v0.0.0-20180924205417-9c8b201e9c68 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
 	github.com/gdamore/tcell/v2 v2.8.1 // indirect
