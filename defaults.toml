@@ -1,0 +1,12 @@
+# anything in global will override all values in any job
+# NOTE everythign is lowercase and strings
+[global]
+	'tool diameter'  = '6'
+# Job specific overrides
+[hole]
+	'diameter' = '5'
+	'tool diameter'  = '3'
+	'feedrate' = '3000'
+[surface]
+	'tool diameter'  = '50'
+	'stepover' = '20'

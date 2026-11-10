@@ -109,6 +109,7 @@ func checkDefaults(defs map[string] map[string]string, title string, k string, v
 	// if there is a defaults override file update the default values for the given key
 	if defs != nil {
 		// check for global overrides
+		k = strings.ToLower(k)
 		o, ok := defs["global"]
 		if ok {
 			oo, ok := o[k]
@@ -117,7 +118,7 @@ func checkDefaults(defs map[string] map[string]string, title string, k string, v
 			}
 		}
 		// check for job specific overrides
-		o, ok = defs[title]
+		o, ok = defs[strings.ToLower(title)]
 		if ok {
 			oo, ok := o[k]
 			if ok {
