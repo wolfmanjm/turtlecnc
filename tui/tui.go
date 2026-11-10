@@ -105,6 +105,8 @@ func readDefaults() map[string] map[string]string {
 	return defs
 }
 
+// if there is a global of job specific override apply it
+// NOTE job specific overrides global
 func checkDefaults(defs map[string] map[string]string, title string, k string, v string) string {
 	// if there is a defaults override file update the default values for the given key
 	if defs != nil {
