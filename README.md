@@ -36,3 +36,7 @@ similar list of jobs and forms will be displayed.
 A server running this is available at https://cam.wolfman.com
 
 Full documentation for each job is available at https://cam.wolfman.com/documentation.html
+
+NOTE that some operations are purely relative to the starting point, whereas
+some need the working coordinate system X0 Y0 to be set to the front left
+corner of the work.

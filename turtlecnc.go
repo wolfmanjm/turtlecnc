@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"runtime"
 
 	"io/fs"
 	"log"
@@ -37,9 +38,6 @@ func main() {
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
-    // Log the request URI and method
-    log.Printf("Request URI: %s, Method: %s", r.RequestURI, r.Method)
-
     if r.Method != http.MethodPost {
         http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
         return
@@ -89,13 +87,36 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func Logger(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Log the request URI and method
-        log.Printf("Request URI: %s, Method: %s", r.RequestURI, r.Method)
-        // Call the next handler
-        next.ServeHTTP(w, r)
-    })
+// Middleware handler to log requests
+type Logger struct {
+	handler http.Handler
+}
+
+func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    log.Printf("Request URI: %s, Method: %s", r.RequestURI, r.Method)
+	l.handler.ServeHTTP(w, r)
+}
+
+// NewLogger constructs a new Logger middleware handler
+func NewLogger(handlerToWrap http.Handler) *Logger {
+	return &Logger{handlerToWrap}
+}
+
+func panicRecovery(h func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+    return func(w http.ResponseWriter, r *http.Request) {
+        defer func() {
+            if err := recover(); err != nil {
+                buf := make([]byte, 2048)
+                n := runtime.Stack(buf, false)
+                buf = buf[:n]
+
+                log.Printf("recovering from panic: %v\n %s", err, buf)
+                w.Write([]byte(`{"error":"Internal server error, please report what you were doing"}`))
+            }
+        }()
+
+        h(w, r)
+    }
 }
 
 //go:embed static
@@ -106,14 +127,17 @@ func runServer(port int) {
         log.Fatal(err)
     }
 
+	mux := http.NewServeMux()
+
     fileserver := http.FileServerFS(sub)
 
-    http.HandleFunc("/api/dialog-result", apiHandler)
-    http.Handle("/", Logger(fileserver))
+    mux.HandleFunc("/api/dialog-result", panicRecovery(apiHandler))
+    mux.Handle("/", fileserver)
 
+	muxWithLogger := NewLogger(mux)
     p := fmt.Sprintf(":%d", port)
     log.Printf("turtlecnc running on port: %d\n", port)
-    if err := http.ListenAndServe(p, nil); err != nil{
+    if err := http.ListenAndServe(p, muxWithLogger); err != nil{
         log.Fatal(err)
     }
 }
